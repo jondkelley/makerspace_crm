@@ -10,7 +10,11 @@ def get_database(filename):
         ('foreign_keys', 1)))  # Enforce foreign-key constraint in sqlite (disabled by default)
     return db
 
-class BaseModel(Model):
+class RootModel(Model):
+    class Meta:
+        database = get_database(database_file)
+
+class BaseModel(RootModel):
     """
     these attributes apply to every table automatically
     """
@@ -18,8 +22,6 @@ class BaseModel(Model):
     updated_dt = DateTimeField(null=True) # object last updated
     is_deleted = BooleanField(default=False) # support soft deletes
     is_hidden = BooleanField(default=False) # support hiding things from view
-    class Meta:
-        database = get_database(database_file)
 
 class FileModel(BaseModel):
     """

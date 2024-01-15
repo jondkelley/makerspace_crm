@@ -1,7 +1,16 @@
 from peewee import *
-from . import get_database, BaseModel, database_file
+from . import get_database, BaseModel, RootModel, database_file
 from .makerspace import Person
 from playhouse.sqlite_ext import JSONField
+
+class DoorDirectionMap(RootModel):
+    """
+    maps which direction a door is considered to be going and if its an exterior door
+    """
+    controller = IntegerField()
+    door = IntegerField()
+    direction = CharField(max_length=3, constraints=[Check("direction IN ('in', 'out')")])
+    exterior_door = BooleanField()
 
 class DoorProfiles(BaseModel):
     """
@@ -106,6 +115,7 @@ class KeyCode(BaseModel):
 def create_tables():
     with get_database(database_file) as db:
         db.create_tables([
+            DoorDirectionMap,
             DoorProfiles,
             VolunteerAccessLog,
             PersonDoorControllerProfiles,

@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-crm.sqlite
+crm.sqlite*
 __pycache__
 views/__pycache__*
 models/__pycache__*
