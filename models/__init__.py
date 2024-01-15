@@ -10,6 +10,13 @@ def get_database(filename):
         ('foreign_keys', 1)))  # Enforce foreign-key constraint in sqlite (disabled by default)
     return db
 
+class FileModel(BaseModel):
+    """
+    inheritable file model
+    """
+    filename = TextField()
+    data = BlobField()
+
 class BaseModel(Model):
     """
     these attributes apply to every table automatically

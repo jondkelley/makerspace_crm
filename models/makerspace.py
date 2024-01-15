@@ -1,14 +1,7 @@
 from peewee import *
-from . import get_database, BaseModel, database_file
+from . import get_database, BaseModel, FileModel, database_file
 from playhouse.sqlite_ext import JSONField
 
-
-class FileModel(BaseModel):
-    """
-    inheritable file model
-    """
-    filename = TextField()
-    data = BlobField()
 
 class BillingEventType(BaseModel):
     """
