@@ -112,46 +112,7 @@ class DonorDocument(FileModel):
     description = TextField()
 
 EQUIPMENT_RECORD_HISTORY_TYPES = ('maintenence', 'repair', 'accounting')
-
-class ToolHistoryRecord(BaseModel):
-    """
-    equipment history record
-    """
-    person = ForeignKeyField(Person, null=True)
-    notes = CharField(max_length=200)
-    class_type = CharField(max_length=40, constraints=[Check(f"class_type IN {str(EQUIPMENT_RECORD_HISTORY_TYPES)}")])
-
-    class Meta:
-        order_by = ('-created_dt',)
-
-class Tool(BaseModel):
-    """ tool inventory """
-    name = CharField(max_length=128)
-    manufacturer = CharField(max_length=128, null=True)
-    model = CharField(max_length=128, null=True)
-    serial_number = IntegerField(null=True)
-    asset_id = IntegerField(null=True)
-    lost = BooleanField(default=False)
-    description = TextField()
-    instruction_manual_url = CharField(unique=True, null=True)
-    training_course_url = CharField(unique=True, null=True)
-    required_form = ForeignKeyField(Form, backref='equipment', null=True)
-    procurement_date = DateTimeField(constraints=[SQL('DEFAULT CURRENT_TIMESTAMP')])
-    donor = TextField(null=True)
-    donor_document = ForeignKeyField(DonorDocument, backref='equipment', null=True)
-    donor_already_taxed = BooleanField(default=False, null=True)
-    is_loaned = BooleanField(default=False, null=True) # loaned but not donated
-    requires_training = BooleanField(default=False, null=True) # loaned but not donated
-    value_market = DecimalField(decimal_places=2, auto_round=True, max_digits=10, null=True)
-    value_tax = DecimalField(decimal_places=2, auto_round=True, max_digits=10, null=True)
-    assigned_zone = ForeignKeyField(Zone, backref='equipment')
-    historical_records = JSONField(null=True) # some datetime organize list of maintenence or other records
-
-class ToolPhoto(FileModel):
-    """
-    tool picture
-    """
-    equipment = ForeignKeyField(Equipment, backref='photo')
+EQUIPMENT_TYPES = ('tool', 'machine')
 
 class EquipmentHistoryRecord(BaseModel):
     """
@@ -167,9 +128,10 @@ class EquipmentHistoryRecord(BaseModel):
 class Equipment(BaseModel):
     """ large equipment """
     name = CharField(max_length=128)
+    equipment_type = CharField(max_length=40, constraints=[Check(f"equipment_type IN {str(EQUIPMENT_TYPES)}")])
     manufacturer = CharField(max_length=128, null=True)
     model = CharField(max_length=128, null=True)
-    serial_number = IntegerField(null=True)
+    serial_number = CharField(null=True)
     out_of_order = BooleanField(default=False)
     asset_id = IntegerField(null=True)
     description = TextField()
