@@ -1,6 +1,7 @@
 from peewee import *
 from . import get_database, BaseModel, FileModel, database_file
 from playhouse.sqlite_ext import JSONField
+import datetime
 
 class BillingEventType(BaseModel):
     """
@@ -33,9 +34,21 @@ class ContractTypeMap(BaseModel):
 class Person(BaseModel):
     first = CharField(max_length=64)
     last = CharField(max_length=64)
+
+class PersonBilling(BaseModel):
+    """
+    Records billing events
+    """
+    billing_entity_id = TextField(null=True) # maybe quickbooks reference
+    last_invoice = DateTimeField(default=datetime.datetime.now)
+    next_invoice = DateTimeField(default=datetime.datetime.now)
+    last_paid = DateTimeField(default=datetime.datetime.now)
+    billing_cadence = ForeignKeyField(BillingCadenceTypeMap)
     billing_ref = CharField(max_length=128, null=True) # used as external billing reference to quickbooks
-    is_member_active = BooleanField(default=True)
-    is_member_paid = BooleanField(default=True)
+    is_paid = BooleanField(default=False)
+    is_overdue = BooleanField(default=False)
+    is_deliquent = BooleanField(default=False)
+    person = ForeignKeyField(Person, backref='billing')
 
 class PersonCredentials(BaseModel):
     """
@@ -180,18 +193,11 @@ class PersonMembership(BaseModel):
     membership_type = ForeignKeyField(MembershipTypeMap)
     person = ForeignKeyField(Person)
 
-class PersonBillingCadence(BaseModel):
-    """
-    many to many relation on billing cadence type
-    """
-    membership_type = ForeignKeyField(BillingCadenceTypeMap)
-    person = ForeignKeyField(Person)
-
 class PersonRbac(BaseModel):
     """
     many to many rbac relationships
     """
-    role = ForeignKeyField(RbacRole)
+    role = TextField()
     permission = BooleanField(default=False)
     person = ForeignKeyField(Person)
 
@@ -215,9 +221,9 @@ def create_tables():
             PersonPhoto,
             PersonEmergencyContact,
             PersonContact,
+            PersonBilling,
             PersonTrainedEquipment,
             PersonContract,
             PersonMembership,
-            PersonBillingCadence,
             PersonRbac,
         ], safe=True)

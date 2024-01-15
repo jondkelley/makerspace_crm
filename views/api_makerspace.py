@@ -1,6 +1,6 @@
 from flask_restful import Resource, reqparse
 from models.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, ContractTypeMap, Zone, Location, Equipment,
-    Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership, PersonBillingCadence)
+    Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership)
 from models.cardaccess import (DoorProfiles, PersonDoorControllerProfiles, DoorAccessLog, KeyCard, KeyCode)
 
 from flask import jsonify

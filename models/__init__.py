@@ -1,4 +1,4 @@
-from peewee import Model, DateTimeField, BooleanField, SQL
+from peewee import Model, DateTimeField, BooleanField, SQL, TextField, BlobField
 from playhouse.sqlite_ext import SqliteExtDatabase
 
 database_file = 'crm.sqlite'
@@ -10,13 +10,6 @@ def get_database(filename):
         ('foreign_keys', 1)))  # Enforce foreign-key constraint in sqlite (disabled by default)
     return db
 
-class FileModel(BaseModel):
-    """
-    inheritable file model
-    """
-    filename = TextField()
-    data = BlobField()
-
 class BaseModel(Model):
     """
     these attributes apply to every table automatically
@@ -27,3 +20,10 @@ class BaseModel(Model):
     is_hidden = BooleanField(default=False) # support hiding things from view
     class Meta:
         database = get_database(database_file)
+
+class FileModel(BaseModel):
+    """
+    inheritable file model
+    """
+    filename = TextField()
+    data = BlobField()
