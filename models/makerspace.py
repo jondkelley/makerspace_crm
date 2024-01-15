@@ -2,6 +2,14 @@ from peewee import *
 from . import get_database, BaseModel, database_file
 from playhouse.sqlite_ext import JSONField
 
+
+class FileModel(BaseModel):
+    """
+    inheritable file model
+    """
+    filename = TextField()
+    data = BlobField()
+
 class BillingEventType(BaseModel):
     """
     store billing event types
@@ -55,20 +63,16 @@ class PersonPreferences(BaseModel):
     setting_value = JSONField()
     person = ForeignKeyField(Person, backref='preferences')
 
-class PersonAvatarPic(BaseModel):
+class PersonAvatarPic(FileModel):
     """
     user avatar
     """
-    filename = TextField()
-    data = BlobField()
     person = ForeignKeyField(Person, backref='profile_pic')
 
-class PersonPhoto(BaseModel):
+class PersonPhoto(FileModel):
     """
     membership picture
     """
-    filename = TextField()
-    data = BlobField()
     person = ForeignKeyField(Person, backref='photo')
 
 class PersonEmergencyContact(BaseModel):
@@ -114,17 +118,15 @@ class PersonForm(BaseModel):
     person = ForeignKeyField(Person)
     form = ForeignKeyField(Form)
 
-class DonorDocument(BaseModel):
+class DonorDocument(FileModel):
     """
     contract or document showing the donation of this equipment to the makerspace
     """
-    filename = TextField()
     description = TextField()
-    data = BlobField()
 
 EQUIPMENT_RECORD_HISTORY_TYPES = ('maintenence', 'repair', 'accounting')
 
-class EquipmentHistoryRecord(BaseModel):
+class ToolHistoryRecord(BaseModel):
     """
     equipment history record
     """
@@ -135,14 +137,15 @@ class EquipmentHistoryRecord(BaseModel):
     class Meta:
         order_by = ('-created_dt',)
 
-class Equipment(BaseModel):
+class Tool(BaseModel):
+    """ tool inventory """
     name = CharField(max_length=128)
-    out_of_order = BooleanField(default=False)
+    manufacturer = CharField(max_length=128, null=True)
+    model = CharField(max_length=128, null=True)
     serial_number = IntegerField(null=True)
     asset_id = IntegerField(null=True)
-    model = CharField(max_length=128, null=True)
+    lost = BooleanField(default=False)
     description = TextField()
-    manufacturer = CharField(max_length=128, null=True)
     instruction_manual_url = CharField(unique=True, null=True)
     training_course_url = CharField(unique=True, null=True)
     required_form = ForeignKeyField(Form, backref='equipment', null=True)
@@ -157,12 +160,49 @@ class Equipment(BaseModel):
     assigned_zone = ForeignKeyField(Zone, backref='equipment')
     historical_records = JSONField(null=True) # some datetime organize list of maintenence or other records
 
-class EquipmentPhoto(BaseModel):
+class ToolPhoto(FileModel):
+    """
+    tool picture
+    """
+    equipment = ForeignKeyField(Equipment, backref='photo')
+
+class EquipmentHistoryRecord(BaseModel):
+    """
+    equipment history record
+    """
+    person = ForeignKeyField(Person, null=True)
+    notes = CharField(max_length=200)
+    class_type = CharField(max_length=40, constraints=[Check(f"class_type IN {str(EQUIPMENT_RECORD_HISTORY_TYPES)}")])
+
+    class Meta:
+        order_by = ('-created_dt',)
+
+class Equipment(BaseModel):
+    """ large equipment """
+    name = CharField(max_length=128)
+    manufacturer = CharField(max_length=128, null=True)
+    model = CharField(max_length=128, null=True)
+    serial_number = IntegerField(null=True)
+    out_of_order = BooleanField(default=False)
+    asset_id = IntegerField(null=True)
+    description = TextField()
+    instruction_manual_url = CharField(unique=True, null=True)
+    training_course_url = CharField(unique=True, null=True)
+    required_form = ForeignKeyField(Form, backref='equipment', null=True)
+    procurement_date = DateTimeField(constraints=[SQL('DEFAULT CURRENT_TIMESTAMP')])
+    donor = TextField(null=True)
+    donor_document = ForeignKeyField(DonorDocument, backref='equipment', null=True)
+    donor_already_taxed = BooleanField(default=False, null=True)
+    is_loaned = BooleanField(default=False, null=True) # loaned but not donated
+    requires_training = BooleanField(default=False, null=True) # loaned but not donated
+    value_market = DecimalField(decimal_places=2, auto_round=True, max_digits=10, null=True)
+    value_tax = DecimalField(decimal_places=2, auto_round=True, max_digits=10, null=True)
+    assigned_zone = ForeignKeyField(Zone, backref='equipment')
+
+class EquipmentPhoto(FileModel):
     """
     equipment picture
     """
-    filename = TextField()
-    data = BlobField()
     equipment = ForeignKeyField(Equipment, backref='photo')
 
 class PersonTrainedEquipment(BaseModel):
@@ -174,14 +214,12 @@ class PersonTrainedEquipment(BaseModel):
     training_dt = DateTimeField(constraints=[SQL('DEFAULT CURRENT_TIMESTAMP')])
     trainer = ForeignKeyField(Person)
 
-class PersonContract(BaseModel):
+class PersonContract(FileModel):
     """
     many to many relation on who has signed a contract, with copy of contract file
     """
     contract_type = ForeignKeyField(ContractTypeMap)
     person = ForeignKeyField(Person)
-    filename = TextField()
-    data = BlobField()
 
 class PersonMembership(BaseModel):
     """
