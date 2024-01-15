@@ -31,7 +31,6 @@ class ContractTypeMap(BaseModel):
     description = TextField()
 
 class Person(BaseModel):
-    uid = CharField(unique=True, max_length=64, null=True) # could be used if we switch to a directory server for auth
     first = CharField(max_length=64)
     last = CharField(max_length=64)
     billing_ref = CharField(max_length=128, null=True) # used as external billing reference to quickbooks
@@ -42,6 +41,7 @@ class PersonCredentials(BaseModel):
     """
     Reference table person credentials
     """
+    uid = CharField(unique=True, max_length=64, null=True) # could be used if we switch to a directory server for auth
     user_id = CharField(max_length=64)
     password_hash = CharField(max_length=128)
     salt = CharField(max_length=128)
@@ -89,11 +89,6 @@ class PersonBillingLog(BaseModel):
     description = CharField(max_length=64)
     billing_event_type_id = ForeignKeyField(BillingEventType, unique=True, backref='person_event_type')
     person = ForeignKeyField(Person, backref='billing_log')
-
-class RbacRole(BaseModel):
-    name = CharField(max_length=128) # board/staff, volunteer, member
-    description = TextField()
-    is_admin = BooleanField(default=False) # access to everything
 
 class Form(BaseModel):
     """
@@ -231,7 +226,11 @@ class PersonBillingCadence(BaseModel):
     person = ForeignKeyField(Person)
 
 class PersonRbac(BaseModel):
+    """
+    many to many rbac relationships
+    """
     role = ForeignKeyField(RbacRole)
+    permission = BooleanField(default=False)
     person = ForeignKeyField(Person)
 
 # Create tables and apply database settings
@@ -254,7 +253,6 @@ def create_tables():
             PersonPhoto,
             PersonEmergencyContact,
             PersonContact,
-            RbacRole,
             PersonTrainedEquipment,
             PersonContract,
             PersonMembership,
