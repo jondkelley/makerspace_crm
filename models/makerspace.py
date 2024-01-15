@@ -34,6 +34,7 @@ class ContractTypeMap(BaseModel):
 class Person(BaseModel):
     first = CharField(max_length=64)
     last = CharField(max_length=64)
+    email = CharField(max_length=512)
 
 class PersonBilling(BaseModel):
     """
@@ -57,7 +58,6 @@ class PersonCredentials(BaseModel):
     uid = CharField(unique=True, max_length=64, null=True) # could be used if we switch to a directory server for auth
     user_id = CharField(max_length=64)
     password_hash = CharField(max_length=128)
-    salt = CharField(max_length=128)
     person = ForeignKeyField(Person, backref='credentials')
 
 class PersonPreferences(BaseModel):

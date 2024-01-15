@@ -17,9 +17,6 @@ class PersonResource(Resource):
                 'id': person.id,
                 'first': person.first,
                 'last': person.last,
-                'billing_ref': person.billing_ref,
-                'is_member_active': person.is_member_active,
-                'is_member_paid': person.is_member_paid
             }
         except Person.DoesNotExist:
             return {'error': 'Person not found'}, 404
@@ -37,9 +34,6 @@ class PersonResource(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('first', type=str, required=True)
         parser.add_argument('last', type=str, required=True)
-        parser.add_argument('billing_ref', type=str)
-        parser.add_argument('is_member_active', type=bool)
-        parser.add_argument('is_member_paid', type=bool)
         args = parser.parse_args()
 
         try:
@@ -48,13 +42,6 @@ class PersonResource(Resource):
                 return {'error': 'Person has been soft deleted'}, 404
             person.first = args['first']
             person.last = args['last']
-            if 'billing_ref' in args:
-                person.billing_ref = args['billing_ref']
-            if 'is_member_active' in args:
-                person.is_member_active = args['is_member_active']
-            if 'is_member_paid' in args:
-                person.is_member_paid = args['is_member_paid']
-
             person.save()
             return {'message': f'Person with ID {person_id} has been updated'}
         except Person.DoesNotExist:
@@ -91,19 +78,13 @@ class PersonResource(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('first', type=str, required=True)
         parser.add_argument('last', type=str, required=True)
-        parser.add_argument('billing_ref', type=str)
-        parser.add_argument('is_member_active', type=bool)
-        parser.add_argument('is_member_paid', type=bool)
         args = parser.parse_args()
 
         new_person = Person.create(
             first=args['first'],
             last=args['last'],
-            billing_ref=args.get('billing_ref', ''),
-            is_member_active=args.get('is_member_active', False),
-            is_member_paid=args.get('is_member_paid', False)
         )
-        
+
         return {'message': 'Person created successfully', 'person_id': new_person.id}, 201
 
 #### UNTESTED

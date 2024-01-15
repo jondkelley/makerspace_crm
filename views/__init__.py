@@ -7,16 +7,17 @@ from .api_makerspace import (AllLocationResource, AllZonesResource, ZoneResource
 
 api = Api()
 
-api.add_resource(AllZonesResource, '/zone/all')
-api.add_resource(AllLocationResource, '/location/all')
-api.add_resource(ZoneResource, '/zone', '/zone/<int:zone_id>')
-api.add_resource(LocationResource, '/location', '/location/<int:structure_id>')
-api.add_resource(PersonBillingCadenceResource, '/person_billing_cadence', '/person_billing_cadence/<int:person_id>/<int:billing_cadence_type_id>')
-api.add_resource(PersonMembershipResource, '/person_membership', '/person_membership/<int:person_id>/<int:membership_type_id>')
-api.add_resource(ContractTypeMapResource, '/contract_type_map', '/contract_type_map/<int:type_id>')
-api.add_resource(PersonAllowedEquipmentResource, '/person_allowed_equipment', '/person_allowed_equipment/<int:person_id>/<int:equipment_id>')
-api.add_resource(MembershipTypeMapResource, '/membership_type_map', '/membership_type_map/<int:type_id>')
-api.add_resource(PersonResource, '/person', '/person/<int:person_id>')
+prefix = '/api'
+api.add_resource(AllZonesResource, f'{prefix}/zone/all')
+api.add_resource(AllLocationResource, f'{prefix}/location/all')
+api.add_resource(ZoneResource, f'{prefix}/zone', f'{prefix}/zone/<int:zone_id>')
+api.add_resource(LocationResource, f'{prefix}/location', f'{prefix}/location/<int:structure_id>')
+api.add_resource(PersonBillingCadenceResource, f'{prefix}/person_billing_cadence', f'{prefix}/person_billing_cadence/<int:person_id>/<int:billing_cadence_type_id>')
+api.add_resource(PersonMembershipResource, f'{prefix}/person_membership', f'{prefix}/person_membership/<int:person_id>/<int:membership_type_id>')
+api.add_resource(ContractTypeMapResource, f'{prefix}/contract_type_map', f'{prefix}/contract_type_map/<int:type_id>')
+api.add_resource(PersonAllowedEquipmentResource, f'{prefix}/person_allowed_equipment', f'{prefix}/person_allowed_equipment/<int:person_id>/<int:equipment_id>')
+api.add_resource(MembershipTypeMapResource, f'{prefix}/membership_type_map', f'{prefix}/membership_type_map/<int:type_id>')
+api.add_resource(PersonResource, f'{prefix}/person', f'{prefix}/person/<int:person_id>')
 
 
 # Examples
