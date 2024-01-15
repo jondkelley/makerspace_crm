@@ -1,7 +1,7 @@
 from flask_restful import Resource, reqparse
 from models.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, ContractTypeMap, Zone, Location, Equipment,
     Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership)
-from models.cardaccess import (DoorProfiles, PersonDoorControllerProfiles, DoorAccessLog, KeyCard, KeyCode)
+from models.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
 
 from flask import jsonify
 from peewee import IntegrityError
@@ -17,6 +17,7 @@ class PersonResource(Resource):
                 'id': person.id,
                 'first': person.first,
                 'last': person.last,
+                'email': person.email,
             }
         except Person.DoesNotExist:
             return {'error': 'Person not found'}, 404
@@ -42,6 +43,7 @@ class PersonResource(Resource):
                 return {'error': 'Person has been soft deleted'}, 404
             person.first = args['first']
             person.last = args['last']
+            person.email = args['email']
             person.save()
             return {'message': f'Person with ID {person_id} has been updated'}
         except Person.DoesNotExist:
@@ -78,11 +80,13 @@ class PersonResource(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('first', type=str, required=True)
         parser.add_argument('last', type=str, required=True)
+        parser.add_argument('email', type=str, required=True)
         args = parser.parse_args()
 
         new_person = Person.create(
             first=args['first'],
             last=args['last'],
+            email=args['email']
         )
 
         return {'message': 'Person created successfully', 'person_id': new_person.id}, 201

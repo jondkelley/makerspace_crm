@@ -3,11 +3,18 @@ from . import get_database, BaseModel, RootModel, database_file
 from .makerspace import Person
 from playhouse.sqlite_ext import JSONField
 
-class DoorDirectionMap(RootModel):
+class Controller(RootModel):
     """
     maps which direction a door is considered to be going and if its an exterior door
     """
     controller = IntegerField()
+    name = CharField(max_length=32)
+
+class DoorDirectionMap(RootModel):
+    """
+    maps which direction a door is considered to be going and if its an exterior door
+    """
+    controller = ForeignKeyField(Controller)
     door = IntegerField()
     direction = CharField(max_length=3, constraints=[Check("direction IN ('in', 'out')")])
     exterior_door = BooleanField()
@@ -16,8 +23,8 @@ class DoorProfiles(BaseModel):
     """
     store which door controller, door and time profile people have access to
     """
-    controller = CharField(max_length=24) # controller ID or ALL
-    profile_id = IntegerField()
+    controller = ForeignKeyField(Controller)
+    profile_id = IntegerField() # profile ID to write to the controller
     start_date = CharField(max_length=11) # yyyy-MM-dd
     end_date = CharField(max_length=11) # yyyy-MM-dd
     time_segment_1_start = CharField(max_length=5) # 16:00
@@ -26,16 +33,6 @@ class DoorProfiles(BaseModel):
     time_segment_2_end = CharField(max_length=5)
     time_segment_3_start = CharField(max_length=5)
     time_segment_3_end = CharField(max_length=5)
-    person = ForeignKeyField(Person)
-
-class PersonDoorControllerProfiles(BaseModel):
-    """
-    store which door controller, door and time profile people have access to
-    """
-    controller = CharField(max_length=24) # which controller to write to
-    door_time_profiles = JSONField() # {"1": 1, "2": 1, "3": 1, "4": 1}
-    start_date = CharField(max_length=11) # yyyy-MM-dd
-    end_date = CharField(max_length=11) # yyyy-MM-dd
     person = ForeignKeyField(Person)
 
 class VolunteerAccessLog(BaseModel):
@@ -51,7 +48,7 @@ class VolunteerAccessLog(BaseModel):
     door = IntegerField() # door id
     controller = IntegerField() # controller id
     access_granted = BooleanField()
-    person = ForeignKeyField(Person, backref='dooraccess_log')
+    person = ForeignKeyField(Person)
 
 def calculate_volunteer_hours(person_id, start_date, end_date, checkin_controller=1, checkin_door=1, checkout_controller=2, checkout_door=2):
     # Fetch records for the specified person within the given date range
@@ -100,25 +97,42 @@ class DoorAccessLog(BaseModel):
     door = IntegerField() # door id
     controller = IntegerField() # controller id
     access_granted = BooleanField()
-    person = ForeignKeyField(Person, backref='dooraccess_log')
+    person = ForeignKeyField(Person)
+
+KEY_CARD_TYPES = ('keyfob', 'card', 'bracelet', 'sticker', 'phone', 'other')
 
 class KeyCard(BaseModel):
     card_number = IntegerField(unique=True)
-    card_type = CharField(max_length=64)
+    card_type = CharField(max_length=64, constraints=[Check(f"card_type IN {str(KEY_CARD_TYPES)}")])
     person = ForeignKeyField(Person, unique=True, backref='key_card')
 
 class KeyCode(BaseModel):
     passcode = IntegerField(unique=True)
     person = ForeignKeyField(Person, unique=True, backref='key_code')
 
+class PersonDoorCredentialProfile(BaseModel):
+    """
+    store which door controller, door and time profile people have access to
+    """
+    person = ForeignKeyField(Controller)
+    card = ForeignKeyField(KeyCard)
+    code = ForeignKeyField(KeyCode)
+    door_1_profile = ForeignKeyField(DoorProfiles)
+    door_2_profile = ForeignKeyField(DoorProfiles)
+    door_3_profile = ForeignKeyField(DoorProfiles)
+    door_4_profile = ForeignKeyField(DoorProfiles)
+    access_start_date = CharField(max_length=11) # yyyy-MM-dd
+    access_end_date = CharField(max_length=11) # yyyy-MM-dd
+
 # Create tables and apply database settings
 def create_tables():
     with get_database(database_file) as db:
         db.create_tables([
+            Controller,
             DoorDirectionMap,
             DoorProfiles,
             VolunteerAccessLog,
-            PersonDoorControllerProfiles,
+            PersonDoorCredentialProfile,
             DoorAccessLog,
             KeyCard,
             KeyCode,
