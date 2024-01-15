@@ -1,0 +1,2 @@
+pip install Flask Flask-RESTful SQLAlchemy flask_sqlalchemy
+

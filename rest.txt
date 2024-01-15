@@ -1,0 +1,31 @@
+# Inflate Zones
+
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Main"}' http://localhost:5000/location
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Workshop"}' http://localhost:5000/location
+
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Lasers", "location_id": 1}' http://localhost:5000/zone
+curl -X POST -H "Content-Type: application/json" -d '{"name": "3D Printing", "location_id": 1}' http://localhost:5000/zone
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Computer Lab", "location_id": 1}' http://localhost:5000/zone
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Electronics", "location_id": 1}' http://localhost:5000/zone
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Office", "location_id": 1}' http://localhost:5000/zone
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Work Area", "location_id": 1}' http://localhost:5000/zone
+
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Woodshop", "location_id": 2}' http://localhost:5000/zone
+curl -X POST -H "Content-Type: application/json" -d '{"name": "Machine Shop", "location_id": 2}' http://localhost:5000/zone
+
+
+
+
+
+
+# Other examples
+
+
+# Person model example
+curl -X POST -H "Content-Type: application/json" -d '{
+    "first": "John",
+    "last": "Doe",
+    "billing_ref": "JD123",
+    "is_member_active": true,
+    "is_member_paid": false
+}' http://localhost:5000/person
