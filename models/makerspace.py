@@ -2,7 +2,6 @@ from peewee import *
 from . import get_database, BaseModel, FileModel, database_file
 from playhouse.sqlite_ext import JSONField
 
-
 class BillingEventType(BaseModel):
     """
     store billing event types
@@ -179,8 +178,8 @@ class Equipment(BaseModel):
     out_of_order = BooleanField(default=False)
     asset_id = IntegerField(null=True)
     description = TextField()
-    instruction_manual_url = CharField(unique=True, null=True)
-    training_course_url = CharField(unique=True, null=True)
+    instruction_manual_url = TextField(unique=True, null=True)
+    training_course_url = TextField(unique=True, null=True)
     required_form = ForeignKeyField(Form, backref='equipment', null=True)
     procurement_date = DateTimeField(constraints=[SQL('DEFAULT CURRENT_TIMESTAMP')])
     donor = TextField(null=True)
@@ -205,7 +204,9 @@ class PersonTrainedEquipment(BaseModel):
     equipment = ForeignKeyField(Equipment)
     person = ForeignKeyField(Person)
     training_dt = DateTimeField(constraints=[SQL('DEFAULT CURRENT_TIMESTAMP')])
-    trainer = ForeignKeyField(Person)
+    trainer = ForeignKeyField(Person, null=True)
+    training_course_url = TextField(null=True)
+    training_course_revision = CharField(max_length=10, null=True)
 
 class PersonContract(FileModel):
     """
@@ -213,6 +214,7 @@ class PersonContract(FileModel):
     """
     contract_type = ForeignKeyField(ContractTypeMap)
     person = ForeignKeyField(Person)
+    revision = CharField(max_length=10, null=True)
 
 class PersonMembership(BaseModel):
     """
@@ -259,6 +261,3 @@ def create_tables():
             PersonBillingCadence,
             PersonRbac,
         ], safe=True)
-
-# # Define the many-to-many relationship
-# PersonEquipment = Person.equipment.get_through_model()
