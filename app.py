@@ -3,10 +3,9 @@ from api import api
 from blueprint.crm import webapp_main
 import os
 
-
-from models.makerspace import create_tables as create_tables_makerspace  # Import the create_tables function
-from models.cardaccess import create_tables as create_tables_cardaccess  # Import the create_tables function
-from models.chore import create_tables as create_tables_chore  # Import the create_tables function
+from models.crm.makerspace import create_tables as create_tables_makerspace  # Import the create_tables function
+from models.crm.cardaccess import create_tables as create_tables_cardaccess  # Import the create_tables function
+from models.crm.chore import create_tables as create_tables_chore  # Import the create_tables function
 
 app = Flask(__name__)
 

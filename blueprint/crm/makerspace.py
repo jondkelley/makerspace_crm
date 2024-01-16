@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, make_response, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from models.makerspace import *
+from models.crm.makerspace import *
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired # password reset token
 from . import webapp_main
 
