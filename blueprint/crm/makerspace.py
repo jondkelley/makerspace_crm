@@ -38,7 +38,7 @@ def register1():
             return 'Registration failed', response.status_code
 
     # For GET request, render the registration form
-    return render_template('register.html', municipalities=MUNICIP)
+    return render_template('crm/register.html', municipalities=MUNICIP)
 
 
 @webapp_main.route('/register22', methods=['GET', 'POST'])
@@ -51,10 +51,10 @@ def register_model():
         password2 = request.form.get('password2')
         if password != password2:
             flash('Your passwords do not match')
-            return render_template('register.html', municipalities=MUNICIP)
+            return render_template('crm/register.html', municipalities=MUNICIP)
         if not len(password) > 5:
             flash('Password must be 5 characters')
-            return render_template('register.html', municipalities=MUNICIP)
+            return render_template('crm/register.html', municipalities=MUNICIP)
         email = request.form.get('email')
         phone = request.form.get('phone')
         street = request.form.get('street')
@@ -64,7 +64,7 @@ def register_model():
             state = 'Michigan'
         if state != 'Michigan':
             flash('Sorry, membership is not available in your area.')
-            return render_template('register.html', municipalities=MUNICIP)
+            return render_template('crm/register.html', municipalities=MUNICIP)
         zip_code = request.form.get('zip_code')
 
         # Check if user already exists
@@ -116,7 +116,7 @@ def register_model():
         flash('Registration successful')
         return redirect(url_for('webapp_main.index'))
 
-    return render_template('register.html', municipalities=MUNICIP)
+    return render_template('crm/register.html', municipalities=MUNICIP)
 
 @webapp_main.route('/reset-password-request', methods=['GET', 'POST'])
 def reset_password_request():
@@ -136,7 +136,7 @@ def reset_password_request():
         # Redirect or show a message
         flash('If the email is registered, you will receive a password reset link.')
 
-    return render_template('reset_password_request.html')
+    return render_template('crm/reset_password_request.html')
 
 def get_user_id_from_token(token, secret_key, salt, max_age=3600):
     serializer = URLSafeTimedSerializer(secret_key)
@@ -169,7 +169,7 @@ def reset_password(token):
         flash('Your password has been reset successfully.')
         return redirect(url_for('webapp_main.login'))
 
-    return render_template('reset_password.html')
+    return render_template('crm/reset_password.html')
 
 @webapp_main.route('/login', methods=['GET', 'POST'])
 def login():
@@ -186,7 +186,7 @@ def login():
         flash('Invalid username or password')
         return redirect(url_for('webapp_main.login'))
 
-    return render_template('login.html')
+    return render_template('crm/login.html')
 
 @webapp_main.route('/logout')
 def logout():
@@ -208,4 +208,4 @@ def index():
     # Check if the user is an admin
     is_admin = PersonRbac.get_or_none((PersonRbac.person == user.person) & (PersonRbac.role == 'admin') & (PersonRbac.permission == True))
     
-    return render_template('index.html', user=user.person, is_admin=bool(is_admin))
+    return render_template('crm/index.html', user=user.person, is_admin=bool(is_admin))
