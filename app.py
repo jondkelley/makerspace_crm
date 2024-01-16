@@ -1,6 +1,6 @@
 from flask import Flask
 from api import api
-from blueprint.crm import webapp_main
+from blueprint.crm import webapp_crm
 import os
 
 from models.crm.makerspace import create_tables as create_tables_makerspace  # Import the create_tables function
@@ -13,7 +13,7 @@ app.config['DATABASE_FILE'] = 'crm.sqlite'
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'a_default_secret_key')
 # Initialize the API views
 api.init_app(app)
-app.register_blueprint(webapp_main, url_prefix='/')
+app.register_blueprint(webapp_crm, url_prefix='/')
 
 
 
