@@ -16,11 +16,7 @@ class ChoreFrequency:
     YEARLY = 'yearly'
     CHOICES = (DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY)
 
-class ChoreClass:
-    """
-    chore class types
-    """
-    CHOICES = ('maintenence', 'cleanup', 'organization', 'administrative')
+CHORE_CLASS_CHOICES = ('maintenence', 'cleanup', 'organization', 'administrative')
 
 class Chore(BaseModel):
     """
@@ -28,27 +24,29 @@ class Chore(BaseModel):
     """
     name = CharField(max_length=40, unique=True)
     description = CharField(max_length=200)
-    classification = CharField(max_length=32, constraints=[Check(f"classification IN {str(ChoreClass.CHOICES)}")])
+    classification = CharField(max_length=32, constraints=[Check(f"classification IN {str(CHORE_CLASS_CHOICES)}")])
     creator = ForeignKeyField(Person, backref='created_chores', null=True)
     last_completed = DateTimeField(default=datetime.datetime.now)
     frequency = CharField(max_length=32, constraints=[Check(f"frequency IN {str(ChoreFrequency.CHOICES)}")])
     def __str__(self):
         return self.name
 
-class ChoreVolunteer(BaseModel):
+class ChoreOwnership(BaseModel):
     """
     chores assigned to volunteers, so we can notify them if a chore is due
     """
-    person = ForeignKeyField(Person, backref='volunteered_chores')
-    chore = ForeignKeyField(Chore, backref='volunteers')
+    person = ForeignKeyField(Person)
+    chore = ForeignKeyField(Chore)
+    completion_percentage = FloatField(default=0.0)
+    notes = TextField()
 
 class ChoreHistory(BaseModel):
     """
     chore history log
     """
-    chore = ForeignKeyField(Chore, backref='history')
+    chore = ForeignKeyField(Chore)
     person = ForeignKeyField(Person, null=True)
-    notes = CharField(max_length=200)
+    notes = TextField()
     class_type = CharField(max_length=40)
     status = CharField(max_length=10)  # 'started', 'done'
 
@@ -60,7 +58,7 @@ def create_tables():
     with get_database(database_file) as db:
         db.create_tables([
             Chore,
-            ChoreVolunteer,
+            ChoreOwnership,
             ChoreHistory
         ], safe=True)
 

@@ -60,13 +60,29 @@ class PersonCredentials(BaseModel):
     password_hash = CharField(max_length=128)
     person = ForeignKeyField(Person, backref='credentials')
 
+    @classmethod
+    def update_password(cls, user_id, new_password):
+        hashed_password = generate_password_hash(new_password)
+        query = cls.update(password_hash=hashed_password).where(cls.user_id == user_id)
+        query.execute()
+
+class PasswordResetToken(BaseModel):
+    user = ForeignKeyField(PersonCredentials, backref='reset_tokens')
+    token = CharField(max_length=128, unique=True)
+    expires_at = DateTimeField()
+
+    @classmethod
+    def create_token_for_user(cls, user, token, expires_in=3600):
+        expiration_time = datetime.datetime.now() + datetime.timedelta(seconds=expires_in)
+        return cls.create(user=user, token=token, expires_at=expiration_time)
+
 class PersonPreferences(BaseModel):
     """
     store user application preferences
     """
     setting_key = CharField(max_length=512)
     setting_value = JSONField()
-    person = ForeignKeyField(Person, backref='preferences')
+    person = ForeignKeyField(Person)
 
 class PersonAvatarPic(FileModel):
     """

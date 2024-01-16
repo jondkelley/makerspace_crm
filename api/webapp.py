@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, make_response, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from models.makerspace import (Person, PersonCredentials, PersonRbac, PersonContact, PersonEmergencyContact)
+from models.makerspace import *
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired # password reset token
 
 webapp_main = Blueprint('webapp_main', __name__)
 
@@ -117,6 +118,59 @@ def register_model():
         return redirect(url_for('webapp_main.index'))
 
     return render_template('register.html', municipalities=MUNICIP)
+
+@webapp_main.route('/reset-password-request', methods=['GET', 'POST'])
+def reset_password_request():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = PersonCredentials.get_or_none(PersonCredentials.email == email)
+        if user:
+            # Generate a token
+            serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+            token = serializer.dumps(user.user_id, salt=app.config['SECURITY_PASSWORD_SALT'])
+
+            # Save token to database
+            PasswordResetToken.create_token_for_user(user=user, token=token)
+
+            # Send email with SendGrid (not shown here)
+
+        # Redirect or show a message
+        flash('If the email is registered, you will receive a password reset link.')
+
+    return render_template('reset_password_request.html')
+
+def get_user_id_from_token(token, secret_key, salt, max_age=3600):
+    serializer = URLSafeTimedSerializer(secret_key)
+    try:
+        user_id = serializer.loads(token, salt=salt, max_age=max_age)
+        return user_id
+    except SignatureExpired:
+        # Handle the case when the token is valid but expired
+        return None
+    except BadSignature:
+        # Handle the case when the token is invalid
+        return None
+
+@webapp_main.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    user_id = get_user_id_from_token(token, app.config['SECRET_KEY'], app.config['SECURITY_PASSWORD_SALT'])
+
+    if user_id is None:
+        # Handle invalid or expired token
+        flash('The password reset link is invalid or has expired.')
+        return redirect(url_for('webapp_main.reset_password_request'))
+
+    if request.method == 'POST':
+        new_password = request.form.get('password')
+        # Validate and update the password
+        PersonCredentials.update_password(user_id=user_id, new_password=new_password)
+
+        # Additional logic (e.g., invalidating the token)
+
+        flash('Your password has been reset successfully.')
+        return redirect(url_for('webapp_main.login'))
+
+    return render_template('reset_password.html')
 
 @webapp_main.route('/login', methods=['GET', 'POST'])
 def login():

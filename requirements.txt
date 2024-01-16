@@ -13,3 +13,4 @@ six==1.16.0
 Werkzeug==3.0.1
 zipp==3.17.0
 requests==2.31.0
+itsdangerous

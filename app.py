@@ -1,6 +1,6 @@
 from flask import Flask
-from views import api
-from views.webapp import webapp_main
+from api import api
+from blueprint.crm import webapp_main
 import os
 
 
