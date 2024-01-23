@@ -4,6 +4,7 @@ from .api_makerspace import (AllLocationResource, AllZonesResource, ZoneResource
 	LocationResource, PersonBillingCadenceResource, PersonMembershipResource, ContractTypeMapResource,
 	PersonAllowedEquipmentResource, MembershipTypeMapResource, PersonResource, PersonRbacResource)
 from .api_chore import (ChoreHistoryResource, ChoreOwnershipResource, ChoreResource)
+from .api_cardaccess import (DoorAccessLogResource, KeyCardResource, KeyCodeResource)
 
 api = Api()
 
@@ -22,7 +23,9 @@ api.add_resource(PersonRbacResource, f'{prefix}/person_rbac', f'{prefix}/person_
 api.add_resource(ChoreResource, f'{prefix}/chore', f'{prefix}/chore/<int:chore_id>')
 api.add_resource(ChoreOwnershipResource, f'{prefix}/chore_ownership', f'{prefix}/chore_ownership/<int:chore_id>')
 api.add_resource(ChoreHistoryResource, f'{prefix}/chore_history', f'{prefix}/chore_history/<int:history_id>')
-
+api.add_resource(DoorAccessLogResource, f'{prefix}/access/door_access_log', f'{prefix}/access/door_access_log/<int:log_id>')
+api.add_resource(KeyCardResource, f'{prefix}/access/cardid', f'{prefix}/access/cardid/<int:card_id>')
+api.add_resource(KeyCodeResource, f'{prefix}/access/keycode', f'{prefix}/access/keycode/<int:code_id>')
 
 
 

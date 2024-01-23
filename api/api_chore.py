@@ -1,7 +1,6 @@
 from flask_restful import Resource, reqparse
 from models.crm.makerspace import (Person)
 from models.crm.chore import (ChoreHistory, ChoreOwnership, Chore)
-from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
 
 from flask import jsonify
 from peewee import IntegrityError
