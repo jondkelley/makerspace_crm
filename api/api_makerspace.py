@@ -6,7 +6,6 @@ from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, Do
 from flask import jsonify
 from peewee import IntegrityError
 
-
 class PersonRbacResource(Resource):
     def get(self, person_id):
         try:

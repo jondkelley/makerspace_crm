@@ -7,6 +7,7 @@ from flask import jsonify
 from peewee import IntegrityError
 import datetime
 
+
 class DoorAccessLogResource(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('log_sha1', type=str, required=True)
