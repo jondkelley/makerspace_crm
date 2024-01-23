@@ -2,8 +2,8 @@ from flask_restful import Api
 #from .api_views import AllComputersResource, ComputerResource, AssignComputerResource
 from .api_makerspace import (AllLocationResource, AllZonesResource, ZoneResource,
 	LocationResource, PersonBillingCadenceResource, PersonMembershipResource, ContractTypeMapResource,
-	PersonAllowedEquipmentResource, MembershipTypeMapResource, PersonResource, PersonRbacResource,
-	ChoreHistoryResource, ChoreOwnershipResource, ChoreResource)
+	PersonAllowedEquipmentResource, MembershipTypeMapResource, PersonResource, PersonRbacResource)
+from .api_chore import (ChoreHistoryResource, ChoreOwnershipResource, ChoreResource)
 
 api = Api()
 
