@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 from api import api
 from blueprint.crm import webapp_crm
 import os
@@ -15,6 +15,9 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'a_default_secret_key')
 api.init_app(app)
 app.register_blueprint(webapp_crm, url_prefix='/')
 
+@app.route('/assets/<path:filename>')
+def redirect_to_static(filename):
+    return redirect(url_for('static', filename='assets/' + filename))
 
 
 if __name__ == '__main__':

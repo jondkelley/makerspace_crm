@@ -1,0 +1,15 @@
+{% extends 'crm/base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <h2>Welcome, {{ user.first }}!</h2>
+    You have roles: {{ ",".join(roles) }}
+    
+    {% if is_admin %}
+        <p>You are an admin.</p>
+    {% else %}
+        <p>You are not an admin.</p>
+    {% endif %}
+{% endblock %}
+

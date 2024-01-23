@@ -2,7 +2,7 @@ from flask_restful import Api
 #from .api_views import AllComputersResource, ComputerResource, AssignComputerResource
 from .api_makerspace import (AllLocationResource, AllZonesResource, ZoneResource,
 	LocationResource, PersonBillingCadenceResource, PersonMembershipResource, ContractTypeMapResource,
-	PersonAllowedEquipmentResource, MembershipTypeMapResource, PersonResource)
+	PersonAllowedEquipmentResource, MembershipTypeMapResource, PersonResource, PersonRbacResource)
 
 
 api = Api()
@@ -18,6 +18,8 @@ api.add_resource(ContractTypeMapResource, f'{prefix}/contract_type_map', f'{pref
 api.add_resource(PersonAllowedEquipmentResource, f'{prefix}/person_allowed_equipment', f'{prefix}/person_allowed_equipment/<int:person_id>/<int:equipment_id>')
 api.add_resource(MembershipTypeMapResource, f'{prefix}/membership_type_map', f'{prefix}/membership_type_map/<int:type_id>')
 api.add_resource(PersonResource, f'{prefix}/person', f'{prefix}/person/<int:person_id>')
+api.add_resource(PersonRbacResource, f'{prefix}/person_rbac', f'{prefix}/person_rbac/<int:person_id>')
+
 
 
 # Examples

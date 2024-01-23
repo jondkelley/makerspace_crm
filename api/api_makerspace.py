@@ -1,11 +1,57 @@
 from flask_restful import Resource, reqparse
 from models.crm.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, ContractTypeMap, Zone, Location, Equipment,
-    Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership)
+    Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership, PersonRbac)
 from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
 
 from flask import jsonify
 from peewee import IntegrityError
 
+class PersonRbacResource(Resource):
+    def get(self, person_id):
+        try:
+            person_rbac = PersonRbac.select().where(PersonRbac.person_id == person_id)
+            return [{'role': rbac.role, 'permission': rbac.permission} for rbac in person_rbac]
+        except DoesNotExist:
+            return {'error': 'PersonRbac not found'}, 404
+
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('role', type=str, required=True)
+        parser.add_argument('permission', type=bool, required=True)
+        parser.add_argument('person_id', type=int, required=True)
+        args = parser.parse_args()
+
+        try:
+            person = Person.get_by_id(args['person_id'])
+            person_rbac = PersonRbac.create(role=args['role'], permission=args['permission'], person=person)
+            return {'message': 'PersonRbac created successfully', 'person_rbac_id': person_rbac.id}, 201
+        except Person.DoesNotExist:
+            return {'error': 'Person not found'}, 404
+
+    def delete(self, person_rbac_id):
+        try:
+            person_rbac = PersonRbac.get_by_id(person_rbac_id)
+            person_rbac.delete_instance()
+            return {'message': f'PersonRbac with ID {person_rbac_id} has been deleted'}
+        except PersonRbac.DoesNotExist:
+            return {'error': 'PersonRbac not found'}, 404
+
+    def put(self, person_rbac_id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('role', type=str)
+        parser.add_argument('permission', type=bool)
+        args = parser.parse_args()
+
+        try:
+            person_rbac = PersonRbac.get_by_id(person_rbac_id)
+            if 'role' in args:
+                person_rbac.role = args['role']
+            if 'permission' in args:
+                person_rbac.permission = args['permission']
+            person_rbac.save()
+            return {'message': f'PersonRbac with ID {person_rbac_id} has been updated'}
+        except PersonRbac.DoesNotExist:
+            return {'error': 'PersonRbac not found'}, 404
 
 class PersonResource(Resource):
     def get(self, person_id):
