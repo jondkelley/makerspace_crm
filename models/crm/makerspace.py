@@ -76,6 +76,17 @@ class PasswordResetToken(BaseModel):
         expiration_time = datetime.datetime.now() + datetime.timedelta(seconds=expires_in)
         return cls.create(user=user, token=token, expires_at=expiration_time)
 
+INTERCOM_STATUS_TYPES = ('available', 'volunteering', 'away')
+INTERCOM_STATUS_TYPES_PREV = (None, 'available', 'volunteering', 'away')
+
+class PersonIntercomStatus(BaseModel):
+    """
+    user availability in CRM
+    """
+    prev_status = CharField(max_length=40, constraints=[Check(f"class_type IN {str(INTERCOM_STATUS_TYPES_PREV)}")])
+    status = CharField(max_length=40, constraints=[Check(f"class_type IN {str(INTERCOM_STATUS_TYPES)}")])
+    person = ForeignKeyField(Person)
+
 class PersonPreferences(BaseModel):
     """
     store user application preferences

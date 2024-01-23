@@ -145,6 +145,21 @@
   <!-- End Navbar Vertical -->
 
   <main id="content" role="main" class="main">
+    <!-- Flash warnings from flask -->
+    <div class="row">
+        <div class="col-12">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="alert alert-info">
+                {% for message in messages %}
+                <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+    <!-- End Flash warnings from flask -->
     <!-- Content -->
 {% block content %}
   <!-- Main content of the dashboard page -->
