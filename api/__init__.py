@@ -2,7 +2,8 @@ from flask_restful import Api
 #from .api_views import AllComputersResource, ComputerResource, AssignComputerResource
 from .api_makerspace import (AllLocationResource, AllZonesResource, ZoneResource,
 	LocationResource, PersonBillingCadenceResource, PersonMembershipResource, ContractTypeMapResource,
-	PersonAllowedEquipmentResource, MembershipTypeMapResource, PersonResource, PersonRbacResource)
+	PersonAllowedEquipmentResource, MembershipTypeMapResource, PersonResource, PersonRbacResource,
+	EquipmentPhotoResource, PersonContractResource, PersonAvatarPicResource, PersonPhotoResource)
 from .api_chore import (ChoreHistoryResource, ChoreOwnershipResource, ChoreResource)
 from .api_cardaccess import (DoorAccessLogResource, KeyCardResource, KeyCodeResource)
 
@@ -26,7 +27,10 @@ api.add_resource(ChoreHistoryResource, f'{prefix}/chore_history', f'{prefix}/cho
 api.add_resource(DoorAccessLogResource, f'{prefix}/access/door_access_log', f'{prefix}/access/door_access_log/<int:log_id>')
 api.add_resource(KeyCardResource, f'{prefix}/access/cardid', f'{prefix}/access/cardid/<int:card_id>')
 api.add_resource(KeyCodeResource, f'{prefix}/access/keycode', f'{prefix}/access/keycode/<int:code_id>')
-
+api.add_resource(EquipmentPhotoResource, f'{prefix}/equipment_photo', f'{prefix}/equipment_photo/<int:photo_id>')
+api.add_resource(PersonContractResource, f'{prefix}/person_contract', f'{prefix}/person_contract/<int:contract_id>')
+api.add_resource(PersonAvatarPicResource, f'{prefix}/person_avatar', f'{prefix}/person_avatar/<int:avatar_id>')
+api.add_resource(PersonPhotoResource, f'{prefix}/person_photo', f'{prefix}/person_photo/<int:photo_id>')
 
 
 # Examples

@@ -1,9 +1,11 @@
 from flask_restful import Resource, reqparse
 from models.crm.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, ContractTypeMap, Zone, Location, Equipment,
-    Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership, PersonRbac)
+    Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership, PersonRbac,
+    PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto)
 from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
+import base64
 
-from flask import jsonify
+from flask import jsonify, request
 from peewee import IntegrityError
 
 class PersonRbacResource(Resource):
@@ -136,6 +138,56 @@ class PersonResource(Resource):
         )
 
         return {'message': 'Person created successfully', 'person_id': new_person.id}, 201
+
+class EquipmentPhotoResource(Resource):
+    def post(self, equipment_id):
+        if 'photo' in request.files:
+            photo = request.files['photo']
+            filename = photo.filename
+            photo_data = photo.read()
+            encoded_data = base64.b64encode(photo_data).decode('utf-8')
+
+            new_photo = EquipmentPhoto.create(equipment=equipment_id, filename=filename, data=encoded_data)
+            return {'message': 'Photo uploaded successfully'}, 201
+        return {'error': 'No photo uploaded'}, 400
+
+    def get(self, photo_id):
+        try:
+            photo = EquipmentPhoto.get(EquipmentPhoto.id == photo_id)
+            return {
+                'id': photo.id,
+                'equipment_id': photo.equipment.id,
+                'filename': photo.filename
+                # 'data': photo.data  # Uncomment if you want to send the photo data
+            }
+        except EquipmentPhoto.DoesNotExist:
+            return {'error': 'Photo not found'}, 404
+
+    def delete(self, photo_id):
+        try:
+            photo = EquipmentPhoto.get(EquipmentPhoto.id == photo_id)
+            photo.delete_instance()
+            return {'message': f'Photo with ID {photo_id} has been deleted'}, 200
+        except EquipmentPhoto.DoesNotExist:
+            return {'error': 'Photo not found'}, 404
+
+    def put(self, photo_id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('photo', type=werkzeug.datastructures.FileStorage, location='files')
+        args = parser.parse_args()
+
+        try:
+            photo = EquipmentPhoto.get(EquipmentPhoto.id == photo_id)
+            if args['photo'] is not None:
+                file_data = args['photo'].read()
+                encoded_data = base64.b64encode(file_data).decode('utf-8')
+                photo.data = encoded_data
+                photo.filename = args['photo'].filename
+                photo.save()
+                return {'message': f'Photo with ID {photo_id} has been updated'}, 200
+            return {'error': 'No new photo provided'}, 400
+        except EquipmentPhoto.DoesNotExist:
+            return {'error': 'Photo not found'}, 404
 
 #### UNTESTED
 
@@ -362,6 +414,163 @@ class PersonBillingCadenceResource(Resource):
             return {'message': 'Person-Billing Cadence association deleted successfully'}
         except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist, PersonBillingCadence.DoesNotExist):
             return {'error': 'Person, Billing Cadence Type, or association not found'}, 404
+
+
+class PersonContractResource(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('contract_type_id', type=int, required=True)
+        parser.add_argument('person_id', type=int, required=True)
+        parser.add_argument('revision', type=str)
+        parser.add_argument('contract', type=werkzeug.datastructures.FileStorage, location='files')
+        args = parser.parse_args()
+
+        if 'contract' in request.files:
+            contract_file = request.files['contract']
+            filename = contract_file.filename
+            file_data = contract_file.read()
+            encoded_data = base64.b64encode(file_data).decode('utf-8')
+
+            new_contract = PersonContract.create(
+                contract_type=args['contract_type_id'],
+                person=args['person_id'],
+                revision=args.get('revision'),
+                filename=filename,
+                data=encoded_data
+            )
+            return {'message': 'Contract uploaded successfully'}, 201
+        return {'error': 'No contract file uploaded'}, 400
+
+    def get(self, contract_id):
+        try:
+            contract = PersonContract.get(PersonContract.id == contract_id)
+            return {
+                'id': contract.id,
+                'contract_type_id': contract.contract_type.id,
+                'person_id': contract.person.id,
+                'revision': contract.revision,
+                'filename': contract.filename
+                # 'data': contract.data  # Uncomment if you want to send the contract data
+            }
+        except PersonContract.DoesNotExist:
+            return {'error': 'Contract not found'}, 404
+
+    def delete(self, contract_id):
+        try:
+            contract = PersonContract.get(PersonContract.id == contract_id)
+            contract.delete_instance()
+            return {'message': f'Contract with ID {contract_id} has been deleted'}, 200
+        except PersonContract.DoesNotExist:
+            return {'error': 'Contract not found'}, 404
+
+    def put(self, contract_id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('contract', type=werkzeug.datastructures.FileStorage, location='files')
+        parser.add_argument('revision', type=str)
+        args = parser.parse_args()
+
+        try:
+            contract = PersonContract.get(PersonContract.id == contract_id)
+            if 'contract' in request.files:
+                contract_file = request.files['contract']
+                contract.filename = contract_file.filename
+                contract.data = base64.b64encode(contract_file.read()).decode('utf-8')
+            if args.get('revision'):
+                contract.revision = args['revision']
+            contract.save()
+            return {'message': f'Contract with ID {contract_id} has been updated'}, 200
+        except PersonContract.DoesNotExist:
+            return {'error': 'Contract not found'}, 404
+
+class PersonAvatarPicResource(Resource):
+    def post(self, person_id):
+        if 'avatar' in request.files:
+            avatar = request.files['avatar']
+            filename = avatar.filename
+            file_data = avatar.read()
+            encoded_data = base64.b64encode(file_data).decode('utf-8')
+
+            new_avatar = PersonAvatarPic.create(person=person_id, filename=filename, data=encoded_data)
+            return {'message': 'Avatar uploaded successfully'}, 201
+        return {'error': 'No avatar file uploaded'}, 400
+
+    def get(self, avatar_id):
+        try:
+            avatar = PersonAvatarPic.get(PersonAvatarPic.id == avatar_id)
+            return {
+                'id': avatar.id,
+                'person_id': avatar.person.id,
+                'filename': avatar.filename
+            }
+        except PersonAvatarPic.DoesNotExist:
+            return {'error': 'Avatar not found'}, 404
+
+    def delete(self, avatar_id):
+        try:
+            avatar = PersonAvatarPic.get(PersonAvatarPic.id == avatar_id)
+            avatar.delete_instance()
+            return {'message': f'Avatar with ID {avatar_id} has been deleted'}, 200
+        except PersonAvatarPic.DoesNotExist:
+            return {'error': 'Avatar not found'}, 404
+
+    def put(self, avatar_id):
+        if 'avatar' in request.files:
+            try:
+                avatar = PersonAvatarPic.get(PersonAvatarPic.id == avatar_id)
+                file_data = request.files['avatar'].read()
+                encoded_data = base64.b64encode(file_data).decode('utf-8')
+                avatar.data = encoded_data
+                avatar.filename = request.files['avatar'].filename
+                avatar.save()
+                return {'message': f'Avatar with ID {avatar_id} has been updated'}, 200
+            except PersonAvatarPic.DoesNotExist:
+                return {'error': 'Avatar not found'}, 404
+        return {'error': 'No new avatar provided'}, 400
+
+class PersonPhotoResource(Resource):
+    def post(self, person_id):
+        if 'photo' in request.files:
+            photo = request.files['photo']
+            filename = photo.filename
+            file_data = photo.read()
+            encoded_data = base64.b64encode(file_data).decode('utf-8')
+
+            new_photo = PersonPhoto.create(person=person_id, filename=filename, data=encoded_data)
+            return {'message': 'Photo uploaded successfully'}, 201
+        return {'error': 'No photo file uploaded'}, 400
+
+    def get(self, photo_id):
+        try:
+            photo = PersonPhoto.get(PersonPhoto.id == photo_id)
+            return {
+                'id': photo.id,
+                'person_id': photo.person.id,
+                'filename': photo.filename
+            }
+        except PersonPhoto.DoesNotExist:
+            return {'error': 'Photo not found'}, 404
+
+    def delete(self, photo_id):
+        try:
+            photo = PersonPhoto.get(PersonPhoto.id == photo_id)
+            photo.delete_instance()
+            return {'message': f'Photo with ID {photo_id} has been deleted'}, 200
+        except PersonPhoto.DoesNotExist:
+            return {'error': 'Photo not found'}, 404
+
+    def put(self, photo_id):
+        if 'photo' in request.files:
+            try:
+                photo = PersonPhoto.get(PersonPhoto.id == photo_id)
+                file_data = request.files['photo'].read()
+                encoded_data = base64.b64encode(file_data).decode('utf-8')
+                photo.data = encoded_data
+                photo.filename = request.files['photo'].filename
+                photo.save()
+                return {'message': f'Photo with ID {photo_id} has been updated'}, 200
+            except PersonPhoto.DoesNotExist:
+                return {'error': 'Photo not found'}, 404
+        return {'error': 'No new photo provided'}, 400
 
 ### END UNTESTED
 
