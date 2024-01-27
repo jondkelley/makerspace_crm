@@ -4,7 +4,6 @@ from models.crm.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, Con
     PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto)
 from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
 import base64
-
 from flask import jsonify, request
 from peewee import IntegrityError
 

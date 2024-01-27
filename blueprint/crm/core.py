@@ -1,15 +1,47 @@
 from flask import Blueprint, render_template, request, redirect, url_for, make_response, flash
+from flask import Flask, session, request, redirect, url_for, render_template
 from werkzeug.security import generate_password_hash, check_password_hash
 from models.crm.makerspace import *
-from helpers.constants import MUNICIP
+from helpers.constants import MUNICIP, US_STATES_LIST, get_michigan_in_first_three
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired # password reset token
-from . import webapp_crm, inject_user_roles
-
+from . import webapp_crm, inject_user_roles, requires_admin
 
 from flask import request, jsonify
 import requests
 
-@webapp_crm.route('/register', methods=['GET', 'POST'])
+@webapp_crm.route("/impersonate/<int:user_id>")
+@requires_admin
+def impersonate_user(user_id):
+    try:
+        # Find the PersonCredentials record based on user_id
+        credentials = PersonCredentials.get(PersonCredentials.person == str(user_id))
+    except DoesNotExist:
+        # Handle the case where the user_id doesn't exist in PersonCredentials
+        return redirect(url_for("error_page"))  # Redirect to an error page or handle as needed
+
+    # TODO needs to set session based on person id not the 
+    # Store the original user's ID in the session
+    session["my_id"] = session.get("user_id")
+
+    # Switch the session to the impersonated user
+    session["user_id"] = user_id
+
+    # Get the corresponding Person record for the username
+    impersonated_person = credentials.person
+
+    return f"Impersonating {impersonated_person.first} {impersonated_person.last}"
+
+@webapp_crm.route("/impersonating_logout")
+@requires_admin
+def stop_impersonating():
+    if "my_id" in session:
+        # Revert back to the original user
+        session["user_id"] = session["my_id"]
+        session.pop("my_id", None)
+    
+    return redirect(url_for("index"))
+
+@webapp_crm.route('/registexr', methods=['GET', 'POST'])
 def register1():
     if request.method == 'POST':
         # Gather data from the form
@@ -36,10 +68,10 @@ def register1():
             return 'Registration failed', response.status_code
 
     # For GET request, render the registration form
-    return render_template('crm/core/register.html', municipalities=MUNICIP)
+    return render_template('crm/core/register.html', states=get_michigan_in_first_three(US_STATES_LIST), municipalities=MUNICIP)
 
 
-@webapp_crm.route('/register22', methods=['GET', 'POST'])
+@webapp_crm.route('/register', methods=['GET', 'POST'])
 def register_model():
     if request.method == 'POST':
         first_name = request.form.get('first_name')
@@ -49,10 +81,10 @@ def register_model():
         password2 = request.form.get('password2')
         if password != password2:
             flash('Your passwords do not match')
-            return render_template('crm/core/register.html', municipalities=MUNICIP)
+            return render_template('crm/core/register.html', states=get_michigan_in_first_three(US_STATES_LIST), municipalities=MUNICIP)
         if not len(password) > 5:
             flash('Password must be 5 characters')
-            return render_template('crm/core/register.html', municipalities=MUNICIP)
+            return render_template('crm/core/register.html', states=get_michigan_in_first_three(US_STATES_LIST), municipalities=MUNICIP)
         email = request.form.get('email')
         phone = request.form.get('phone')
         street = request.form.get('street')
@@ -62,7 +94,7 @@ def register_model():
             state = 'Michigan'
         if state != 'Michigan':
             flash('Sorry, membership is not available in your area.')
-            return render_template('crm/core/register.html', municipalities=MUNICIP)
+            return render_template('crm/core/register.html', states=get_michigan_in_first_three(US_STATES_LIST), municipalities=MUNICIP)
         zip_code = request.form.get('zip_code')
 
         # Check if user already exists
@@ -114,7 +146,7 @@ def register_model():
         flash('Registration successful')
         return redirect(url_for('webapp_crm.index'))
 
-    return render_template('crm/core/register.html', municipalities=MUNICIP)
+    return render_template('crm/core/register.html', states=get_michigan_in_first_three(US_STATES_LIST), municipalities=MUNICIP)
 
 @webapp_crm.route('/reset-password-request', methods=['GET', 'POST'])
 def reset_password_request():

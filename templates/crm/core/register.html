@@ -60,7 +60,11 @@
                     </div>
                     <div class="col-md-6">
                         <label for="state" class="form-label">State:</label>
-                        <input type="text" class="form-control" id="state" name="state">
+                        <select class="form-select" id="state" name="state">
+                            {% for state in states %}
+                            <option value="{{ state }}">{{ state }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label for="zip_code" class="form-label">Zip Code:</label>
