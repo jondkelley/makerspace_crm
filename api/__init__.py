@@ -9,7 +9,7 @@ from .api_cardaccess import (DoorAccessLogResource, KeyCardResource, KeyCodeReso
 
 api = Api()
 
-prefix = '/api'
+prefix = '/v1/api'
 api.add_resource(AllZonesResource, f'{prefix}/zone/all')
 api.add_resource(ZoneResource, f'{prefix}/zone', f'{prefix}/zone/<int:zone_id>')
 api.add_resource(AllLocationResource, f'{prefix}/location/all')
