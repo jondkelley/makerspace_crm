@@ -140,6 +140,9 @@ class PersonResource(Resource):
         return {'message': 'Person created successfully', 'person_id': new_person.id}, 201
 
 class EquipmentPhotoResource(Resource):
+    """
+     curl -d @path/to/data.json -X POST
+    """
     def post(self, equipment_id):
         if 'photo' in request.files:
             photo = request.files['photo']
@@ -417,6 +420,13 @@ class PersonBillingCadenceResource(Resource):
 
 
 class PersonContractResource(Resource):
+    """
+    curl -X POST http://<your-server-url>/path/to/person-contract \
+         -F "contract_type_id=<contract_type_id>" \
+         -F "person_id=<person_id>" \
+         -F "revision=<revision>" \
+         -F "contract=@/path/to/contract_file" 
+    """
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument('contract_type_id', type=int, required=True)
@@ -483,6 +493,9 @@ class PersonContractResource(Resource):
             return {'error': 'Contract not found'}, 404
 
 class PersonAvatarPicResource(Resource):
+    """
+     curl -d @path/to/data.json -X POST
+    """
     def post(self, person_id):
         if 'avatar' in request.files:
             avatar = request.files['avatar']
@@ -528,6 +541,9 @@ class PersonAvatarPicResource(Resource):
         return {'error': 'No new avatar provided'}, 400
 
 class PersonPhotoResource(Resource):
+    """
+     curl -d @path/to/data.json -X POST
+    """
     def post(self, person_id):
         if 'photo' in request.files:
             photo = request.files['photo']
