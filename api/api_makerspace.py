@@ -160,8 +160,8 @@ class EquipmentPhotoResource(Resource):
             return {
                 'id': photo.id,
                 'equipment_id': photo.equipment.id,
-                'filename': photo.filename
-                # 'data': photo.data  # Uncomment if you want to send the photo data
+                'filename': photo.filename,
+                'data': photo.data
             }
         except EquipmentPhoto.DoesNotExist:
             return {'error': 'Photo not found'}, 404
@@ -459,8 +459,8 @@ class PersonContractResource(Resource):
                 'contract_type_id': contract.contract_type.id,
                 'person_id': contract.person.id,
                 'revision': contract.revision,
-                'filename': contract.filename
-                # 'data': contract.data  # Uncomment if you want to send the contract data
+                'filename': contract.filename,
+                'data': contract.data
             }
         except PersonContract.DoesNotExist:
             return {'error': 'Contract not found'}, 404
@@ -513,7 +513,8 @@ class PersonAvatarPicResource(Resource):
             return {
                 'id': avatar.id,
                 'person_id': avatar.person.id,
-                'filename': avatar.filename
+                'filename': avatar.filename,
+                'data': avatar.data
             }
         except PersonAvatarPic.DoesNotExist:
             return {'error': 'Avatar not found'}, 404
@@ -561,7 +562,8 @@ class PersonPhotoResource(Resource):
             return {
                 'id': photo.id,
                 'person_id': photo.person.id,
-                'filename': photo.filename
+                'filename': photo.filename,
+                'data': photo.data
             }
         except PersonPhoto.DoesNotExist:
             return {'error': 'Photo not found'}, 404
