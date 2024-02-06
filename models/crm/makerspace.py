@@ -22,6 +22,7 @@ class Zone(BaseModel):
 
 # Mapping tables to define defined typed categories to assign userr to
 class BillingCadenceTypeMap(BaseModel):
+    # API
     name = CharField(max_length=128)
     billing_plan_id = TextField(null=True) # maybe quickbooks reference
     description = TextField()
@@ -45,6 +46,7 @@ class Person(BaseModel):
 class PersonBilling(BaseModel):
     """
     Records billing events
+    # API
     """
     billing_entity_id = TextField(null=True) # maybe quickbooks reference
     last_invoice = DateTimeField(default=datetime.datetime.now)

@@ -1,11 +1,11 @@
 from flask_restful import Api
 #from .api_views import AllComputersResource, ComputerResource, AssignComputerResource
 from .api_makerspace import (AllLocationResource, AllZonesResource, ZoneResource,
-	LocationResource, PersonMembershipResource, ContractTypeMapResource,
+	LocationResource, PersonBillingCadenceResource, PersonMembershipResource, ContractTypeMapResource,
 	PersonTrainedEquipmentResource, MembershipTypeMapResource, PersonResource, PersonRbacResource,
 	EquipmentPhotoResource, PersonContractResource, PersonAvatarPicResource, PersonPhotoResource,
 	EquipmentHistoryRecordResource, EquipmentResource, FormResource, PersonFormResource,
-	BillingEventTypeResource, PersonBillingLogResource)
+	BillingEventTypeResource, PersonBillingLogResource, PersonBilling)
 from .api_chore import (ChoreHistoryResource, ChoreOwnershipResource, ChoreResource)
 from .api_cardaccess import (DoorAccessLogResource, KeyCardResource, KeyCodeResource)
 
@@ -16,7 +16,7 @@ api.add_resource(AllZonesResource, f'{prefix}/zone/all')
 api.add_resource(ZoneResource, f'{prefix}/zone', f'{prefix}/zone/<int:zone_id>')
 api.add_resource(AllLocationResource, f'{prefix}/location/all')
 api.add_resource(LocationResource, f'{prefix}/location', f'{prefix}/location/<int:structure_id>')
-#api.add_resource(PersonBillingCadenceResource, f'{prefix}/person_billing_cadence', f'{prefix}/person_billing_cadence/<int:person_id>/<int:billing_cadence_type_id>')
+api.add_resource(PersonBillingCadenceResource, f'{prefix}/person_billing_cadence', f'{prefix}/person_billing_cadence/<int:person_id>/<int:billing_cadence_type_id>')
 api.add_resource(PersonMembershipResource, f'{prefix}/person_membership', f'{prefix}/person_membership/<int:person_id>/<int:membership_type_id>')
 api.add_resource(ContractTypeMapResource, f'{prefix}/contract_type_map', f'{prefix}/contract_type_map/<int:type_id>')
 api.add_resource(PersonTrainedEquipmentResource, f'{prefix}/person_allowed_equipment', f'{prefix}/person_allowed_equipment/<int:person_id>/<int:equipment_id>')
@@ -39,6 +39,7 @@ api.add_resource(FormResource, f'{prefix}/form', f'{prefix}/form/<int:form_id>')
 api.add_resource(PersonFormResource, f'{prefix}/person_form', f'{prefix}/person_form/<int:person_form_id>')
 api.add_resource(BillingEventTypeResource, f'{prefix}/billing_event_type', f'{prefix}/billing_event_type/<int:event_type_id>')
 api.add_resource(PersonBillingLogResource, f'{prefix}/person_billing_log', f'{prefix}/person_billing_log/<int:billing_log_id>')
+api.add_resource(PersonBilling, f'{prefix}/person_billing', f'{prefix}/person_billing/<int:person_billing_id>')
 
 # Examples
 # api.add_resource(AllPersonsResource, '/persons/all')

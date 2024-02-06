@@ -2,11 +2,78 @@ from flask_restful import Resource, reqparse
 from models.crm.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, ContractTypeMap, Zone, Location, Equipment,
     Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership, PersonRbac,
     PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto, EquipmentHistoryRecord, Equipment, Form, PersonForm,
-    BillingEventType, PersonBillingLog)
+    BillingEventType, PersonBillingLog, PersonBilling)
 from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
 import base64
 from flask import jsonify, request
 from peewee import IntegrityError
+
+class PersonBillingResource(Resource):
+    def post(self):
+        data = request.get_json()
+        try:
+            new_person_billing = PersonBilling.create(
+                billing_entity_id=data.get('billing_entity_id'),
+                last_invoice=data.get('last_invoice', datetime.datetime.now()),
+                next_invoice=data.get('next_invoice', datetime.datetime.now()),
+                last_paid=data.get('last_paid', datetime.datetime.now()),
+                billing_cadence=data['billing_cadence'],
+                billing_ref=data.get('billing_ref'),
+                is_paid=data.get('is_paid', False),
+                is_overdue=data.get('is_overdue', False),
+                is_deliquent=data.get('is_deliquent', False),
+                person=data['person']
+            )
+            return {'message': 'Person billing created successfully', 'id': new_person_billing.id}, 201
+        except KeyError as e:
+            return {'error': f'Missing key {e}'}, 400
+        except IntegrityError as e:
+            return {'error': str(e)}, 400
+
+    def get(self, person_billing_id):
+        try:
+            person_billing = PersonBilling.get(PersonBilling.id == person_billing_id)
+            return {
+                'id': person_billing.id,
+                'billing_entity_id': person_billing.billing_entity_id,
+                'last_invoice': person_billing.last_invoice,
+                'next_invoice': person_billing.next_invoice,
+                'last_paid': person_billing.last_paid,
+                'billing_cadence': person_billing.billing_cadence_id,  # Assuming billing_cadence_id is accessible
+                'billing_ref': person_billing.billing_ref,
+                'is_paid': person_billing.is_paid,
+                'is_overdue': person_billing.is_overdue,
+                'is_deliquent': person_billing.is_deliquent,
+                'person_id': person_billing.person_id
+            }
+        except DoesNotExist:
+            return {'error': 'Person billing not found'}, 404
+
+    def delete(self, person_billing_id):
+        try:
+            person_billing = PersonBilling.get(PersonBilling.id == person_billing_id)
+            person_billing.delete_instance()
+            return {'message': f'Person billing with ID {person_billing_id} has been deleted'}, 200
+        except DoesNotExist:
+            return {'error': 'Person billing not found'}, 404
+
+    def put(self, person_billing_id):
+        data = request.get_json()
+        try:
+            person_billing = PersonBilling.get(PersonBilling.id == person_billing_id)
+            person_billing.billing_entity_id = data.get('billing_entity_id', person_billing.billing_entity_id)
+            person_billing.last_invoice = data.get('last_invoice', person_billing.last_invoice)
+            person_billing.next_invoice = data.get('next_invoice', person_billing.next_invoice)
+            person_billing.last_paid = data.get('last_paid', person_billing.last_paid)
+            person_billing.billing_cadence = data.get('billing_cadence', person_billing.billing_cadence)
+            person_billing.billing_ref = data.get('billing_ref', person_billing.billing_ref)
+            person_billing.is_paid = data.get('is_paid', person_billing.is_paid)
+            person_billing.is_overdue = data.get('is_overdue', person_billing.is_overdue)
+            person_billing.is_deliquent = data.get('is_deliquent', person_billing.is_deliquent)
+            person_billing.save()
+            return {'message': f'Person billing with ID {person_billing_id} has been updated'}, 200
+        except DoesNotExist:
+            return {'error': 'Person billing not found'}, 404
 
 class BillingEventTypeResource(Resource):
     def post(self):
@@ -648,64 +715,64 @@ class PersonMembershipResource(Resource):
             return {'error': 'Person, Membership Type, or association not found'}, 404
 
 
-# class PersonBillingCadenceResource(Resource):
-#     def get(self, person_id):
-#         try:
-#             person = Person.get(Person.id == person_id)
-#             billing_cadences = person.personbillingcadence_set.select().join(BillingCadenceTypeMap)
-#             billing_cadence_list = [{'id': billing_cadence.membership_type.id, 'name': billing_cadence.membership_type.name, 'description': billing_cadence.membership_type.description} for billing_cadence in billing_cadences]
-#             return {'person_id': person.id, 'billing_cadences': billing_cadence_list}
-#         except Person.DoesNotExist:
-#             return {'error': 'Person not found'}, 404
+class PersonBillingCadenceResource(Resource):
+    def get(self, person_id):
+        try:
+            person = Person.get(Person.id == person_id)
+            billing_cadences = person.personbillingcadence_set.select().join(BillingCadenceTypeMap)
+            billing_cadence_list = [{'id': billing_cadence.membership_type.id, 'name': billing_cadence.membership_type.name, 'description': billing_cadence.membership_type.description} for billing_cadence in billing_cadences]
+            return {'person_id': person.id, 'billing_cadences': billing_cadence_list}
+        except Person.DoesNotExist:
+            return {'error': 'Person not found'}, 404
 
-#     def post(self):
-#         parser = reqparse.RequestParser()
-#         parser.add_argument('person_id', type=int, required=True)
-#         parser.add_argument('billing_cadence_type_id', type=int, required=True)
-#         args = parser.parse_args()
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('person_id', type=int, required=True)
+        parser.add_argument('billing_cadence_type_id', type=int, required=True)
+        args = parser.parse_args()
 
-#         try:
-#             person = Person.get(Person.id == args['person_id'])
-#             billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == args['billing_cadence_type_id'])
+        try:
+            person = Person.get(Person.id == args['person_id'])
+            billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == args['billing_cadence_type_id'])
 
-#             association, created = PersonBillingCadence.get_or_create(person=person, membership_type=billing_cadence_type)
+            association, created = PersonBillingCadence.get_or_create(person=person, membership_type=billing_cadence_type)
 
-#             if created:
-#                 return {'message': 'Person-Billing Cadence association created successfully'}, 201
-#             else:
-#                 return {'message': 'Person-Billing Cadence association already exists'}, 200
-#         except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist):
-#             return {'error': 'Person or Billing Cadence Type not found'}, 404
+            if created:
+                return {'message': 'Person-Billing Cadence association created successfully'}, 201
+            else:
+                return {'message': 'Person-Billing Cadence association already exists'}, 200
+        except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist):
+            return {'error': 'Person or Billing Cadence Type not found'}, 404
 
-#     def put(self, person_id, billing_cadence_type_id):
-#         parser = reqparse.RequestParser()
-#         parser.add_argument('person_id', type=int, required=True)
-#         parser.add_argument('billing_cadence_type_id', type=int, required=True)
-#         args = parser.parse_args()
+    def put(self, person_id, billing_cadence_type_id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('person_id', type=int, required=True)
+        parser.add_argument('billing_cadence_type_id', type=int, required=True)
+        args = parser.parse_args()
 
-#         try:
-#             person = Person.get(Person.id == args['person_id'])
-#             billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == args['billing_cadence_type_id'])
+        try:
+            person = Person.get(Person.id == args['person_id'])
+            billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == args['billing_cadence_type_id'])
 
-#             association, created = PersonBillingCadence.get_or_create(person=person, membership_type=billing_cadence_type)
+            association, created = PersonBillingCadence.get_or_create(person=person, membership_type=billing_cadence_type)
 
-#             if created:
-#                 return {'message': 'Person-Billing Cadence association created successfully'}, 201
-#             else:
-#                 return {'message': 'Person-Billing Cadence association already exists'}, 200
-#         except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist):
-#             return {'error': 'Person or Billing Cadence Type not found'}, 404
+            if created:
+                return {'message': 'Person-Billing Cadence association created successfully'}, 201
+            else:
+                return {'message': 'Person-Billing Cadence association already exists'}, 200
+        except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist):
+            return {'error': 'Person or Billing Cadence Type not found'}, 404
 
-#     def delete(self, person_id, billing_cadence_type_id):
-#         try:
-#             person = Person.get(Person.id == person_id)
-#             billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == billing_cadence_type_id)
+    def delete(self, person_id, billing_cadence_type_id):
+        try:
+            person = Person.get(Person.id == person_id)
+            billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == billing_cadence_type_id)
 
-#             association = PersonBillingCadence.get(person=person, membership_type=billing_cadence_type)
-#             association.delete_instance()
-#             return {'message': 'Person-Billing Cadence association deleted successfully'}
-#         except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist, PersonBillingCadence.DoesNotExist):
-#             return {'error': 'Person, Billing Cadence Type, or association not found'}, 404
+            association = PersonBillingCadence.get(person=person, membership_type=billing_cadence_type)
+            association.delete_instance()
+            return {'message': 'Person-Billing Cadence association deleted successfully'}
+        except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist, PersonBillingCadence.DoesNotExist):
+            return {'error': 'Person, Billing Cadence Type, or association not found'}, 404
 
 
 class PersonContractResource(Resource):
