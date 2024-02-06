@@ -140,6 +140,7 @@ class PersonBillingLog(BaseModel):
 class Form(BaseModel):
     """
     forms to be filled out by users
+    # API
     """
     name = CharField(max_length=128, unique=True)
     description = TextField()
@@ -148,6 +149,7 @@ class Form(BaseModel):
 class PersonForm(BaseModel):
     """
     forms filled out by user
+    # API
     """
     person = ForeignKeyField(Person)
     form = ForeignKeyField(Form)
@@ -164,6 +166,7 @@ EQUIPMENT_TYPES = ('tool', 'machine')
 class EquipmentHistoryRecord(BaseModel):
     """
     equipment history record
+    # API
     """
     person = ForeignKeyField(Person, null=True)
     notes = CharField(max_length=200)
@@ -173,6 +176,7 @@ class EquipmentHistoryRecord(BaseModel):
         order_by = ('-created_dt',)
 
 class Equipment(BaseModel):
+    # API
     """ large equipment """
     name = CharField(max_length=128)
     equipment_type = CharField(max_length=40, constraints=[Check(f"equipment_type IN {str(EQUIPMENT_TYPES)}")])

@@ -33,7 +33,8 @@ api.add_resource(PersonAvatarPicResource, f'{prefix}/person_avatar', f'{prefix}/
 api.add_resource(PersonPhotoResource, f'{prefix}/person_photo', f'{prefix}/person_photo/<int:photo_id>')
 api.add_resource(EquipmentHistoryRecordResource, f'{prefix}/equipment_history', f'{prefix}/equipment_history/<int:record_id>')
 api.add_resource(EquipmentResource, f'{prefix}/equipment', f'{prefix}/equipment/<int:equipment_id>')
-
+api.add_resource(FormResource, f'{prefix}/form', f'{prefix}/form/<int:form_id>')
+api.add_resource(PersonFormResource, f'{prefix}/person_form', f'{prefix}/person_form/<int:person_form_id>')
 
 # Examples
 # api.add_resource(AllPersonsResource, '/persons/all')

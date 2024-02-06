@@ -1,12 +1,104 @@
 from flask_restful import Resource, reqparse
 from models.crm.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, ContractTypeMap, Zone, Location, Equipment,
     Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership, PersonRbac,
-    PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto, EquipmentHistoryRecord, Equipment)
+    PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto, EquipmentHistoryRecord, Equipment, Form, PersonForm)
 from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
 import base64
 from flask import jsonify, request
 from peewee import IntegrityError
 
+class FormResource(Resource):
+    def post(self):
+        data = request.get_json()
+        try:
+            new_form = Form.create(
+                name=data['name'],
+                description=data.get('description', ''),
+                form_url=data['form_url']
+            )
+            return {'message': 'Form created successfully', 'id': new_form.id}, 201
+        except KeyError as e:
+            return {'error': f'Missing key {e}'}, 400
+        except IntegrityError as e:
+            return {'error': str(e)}, 400
+
+    def get(self, form_id):
+        try:
+            form = Form.get(Form.id == form_id)
+            return {
+                'id': form.id,
+                'name': form.name,
+                'description': form.description,
+                'form_url': form.form_url
+            }
+        except DoesNotExist:
+            return {'error': 'Form not found'}, 404
+
+    def delete(self, form_id):
+        try:
+            form = Form.get(Form.id == form_id)
+            form.delete_instance()
+            return {'message': f'Form with ID {form_id} has been deleted'}, 200
+        except DoesNotExist:
+            return {'error': 'Form not found'}, 404
+
+    def put(self, form_id):
+        try:
+            form = Form.get(Form.id == form_id)
+            data = request.get_json()
+            form.name = data.get('name', form.name)
+            form.description = data.get('description', form.description)
+            form.form_url = data.get('form_url', form.form_url)
+            form.save()
+            return {'message': f'Form with ID {form_id} has been updated'}, 200
+        except DoesNotExist:
+            return {'error': 'Form not found'}, 404
+
+class PersonFormResource(Resource):
+    def post(self):
+        data = request.get_json()
+        try:
+            new_person_form = PersonForm.create(
+                person=data['person'],
+                form=data['form']
+            )
+            return {'message': 'Person form association created successfully', 'id': new_person_form.id}, 201
+        except KeyError as e:
+            return {'error': f'Missing key {e}'}, 400
+        except IntegrityError as e:
+            return {'error': str(e)}, 400
+
+    def get(self, person_form_id):
+        try:
+            person_form = PersonForm.get(PersonForm.id == person_form_id)
+            return {
+                'id': person_form.id,
+                'person_id': person_form.person.id,
+                'form_id': person_form.form.id
+            }
+        except DoesNotExist:
+            return {'error': 'PersonForm not found'}, 404
+
+    def delete(self, person_form_id):
+        try:
+            person_form = PersonForm.get(PersonForm.id == person_form_id)
+            person_form.delete_instance()
+            return {'message': f'PersonForm with ID {person_form_id} has been deleted'}, 200
+        except DoesNotExist:
+            return {'error': 'PersonForm not found'}, 404
+
+    def put(self, person_form_id):
+        data = request.get_json()
+        try:
+            person_form = PersonForm.get(PersonForm.id == person_form_id)
+            if 'person' in data:
+                person_form.person = data['person']
+            if 'form' in data:
+                person_form.form = data['form']
+            person_form.save()
+            return {'message': f'PersonForm with ID {person_form_id} has been updated'}, 200
+        except DoesNotExist:
+            return {'error': 'PersonForm not found'}, 404
 
 class EquipmentHistoryRecordResource(Resource):
     def post(self):
