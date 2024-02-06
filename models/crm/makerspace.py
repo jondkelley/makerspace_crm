@@ -6,6 +6,7 @@ import datetime
 class BillingEventType(BaseModel):
     """
     store billing event types
+    # API
     """
     name = CharField(max_length=128) #overdue, paid, billing due, deliquent
     description = TextField()
@@ -132,6 +133,7 @@ class PersonContact(BaseModel):
 class PersonBillingLog(BaseModel):
     """
     store billing log data
+    # API
     """
     description = CharField(max_length=64)
     billing_event_type_id = ForeignKeyField(BillingEventType, unique=True, backref='person_event_type')

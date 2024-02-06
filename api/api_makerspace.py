@@ -1,11 +1,105 @@
 from flask_restful import Resource, reqparse
 from models.crm.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, ContractTypeMap, Zone, Location, Equipment,
     Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership, PersonRbac,
-    PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto, EquipmentHistoryRecord, Equipment, Form, PersonForm)
+    PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto, EquipmentHistoryRecord, Equipment, Form, PersonForm,
+    BillingEventType, PersonBillingLog)
 from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
 import base64
 from flask import jsonify, request
 from peewee import IntegrityError
+
+class BillingEventTypeResource(Resource):
+    def post(self):
+        data = request.get_json()
+        try:
+            new_event_type = BillingEventType.create(
+                name=data['name'],
+                description=data.get('description', '')
+            )
+            return {'message': 'Billing event type created successfully', 'id': new_event_type.id}, 201
+        except KeyError as e:
+            return {'error': f'Missing key {e}'}, 400
+        except IntegrityError as e:
+            return {'error': str(e)}, 400
+
+    def get(self, event_type_id):
+        try:
+            event_type = BillingEventType.get(BillingEventType.id == event_type_id)
+            return {
+                'id': event_type.id,
+                'name': event_type.name,
+                'description': event_type.description
+            }
+        except DoesNotExist:
+            return {'error': 'Billing event type not found'}, 404
+
+    def delete(self, event_type_id):
+        try:
+            event_type = BillingEventType.get(BillingEventType.id == event_type_id)
+            event_type.delete_instance()
+            return {'message': f'Billing event type with ID {event_type_id} has been deleted'}, 200
+        except DoesNotExist:
+            return {'error': 'Billing event type not found'}, 404
+
+    def put(self, event_type_id):
+        try:
+            event_type = BillingEventType.get(BillingEventType.id == event_type_id)
+            data = request.get_json()
+            event_type.name = data.get('name', event_type.name)
+            event_type.description = data.get('description', event_type.description)
+            event_type.save()
+            return {'message': f'Billing event type with ID {event_type_id} has been updated'}, 200
+        except DoesNotExist:
+            return {'error': 'Billing event type not found'}, 404
+
+class PersonBillingLogResource(Resource):
+    def post(self):
+        data = request.get_json()
+        try:
+            new_billing_log = PersonBillingLog.create(
+                description=data['description'],
+                billing_event_type_id=data['billing_event_type_id'],
+                person=data['person']
+            )
+            return {'message': 'Person billing log created successfully', 'id': new_billing_log.id}, 201
+        except KeyError as e:
+            return {'error': f'Missing key {e}'}, 400
+        except IntegrityError as e:
+            return {'error': str(e)}, 400
+
+    def get(self, billing_log_id):
+        try:
+            billing_log = PersonBillingLog.get(PersonBillingLog.id == billing_log_id)
+            return {
+                'id': billing_log.id,
+                'description': billing_log.description,
+                'billing_event_type_id': billing_log.billing_event_type_id.id,
+                'person_id': billing_log.person.id
+            }
+        except DoesNotExist:
+            return {'error': 'Person billing log not found'}, 404
+
+    def delete(self, billing_log_id):
+        try:
+            billing_log = PersonBillingLog.get(PersonBillingLog.id == billing_log_id)
+            billing_log.delete_instance()
+            return {'message': f'Person billing log with ID {billing_log_id} has been deleted'}, 200
+        except DoesNotExist:
+            return {'error': 'Person billing log not found'}, 404
+
+    def put(self, billing_log_id):
+        data = request.get_json()
+        try:
+            billing_log = PersonBillingLog.get(PersonBillingLog.id == billing_log_id)
+            billing_log.description = data.get('description', billing_log.description)
+            if 'billing_event_type_id' in data:
+                billing_log.billing_event_type_id = data['billing_event_type_id']
+            if 'person' in data:
+                billing_log.person = data['person']
+            billing_log.save()
+            return {'message': f'Person billing log with ID {billing_log_id} has been updated'}, 200
+        except DoesNotExist:
+            return {'error': 'Person billing log not found'}, 404
 
 class FormResource(Resource):
     def post(self):

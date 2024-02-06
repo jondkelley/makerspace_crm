@@ -3,7 +3,9 @@ from flask_restful import Api
 from .api_makerspace import (AllLocationResource, AllZonesResource, ZoneResource,
 	LocationResource, PersonMembershipResource, ContractTypeMapResource,
 	PersonTrainedEquipmentResource, MembershipTypeMapResource, PersonResource, PersonRbacResource,
-	EquipmentPhotoResource, PersonContractResource, PersonAvatarPicResource, PersonPhotoResource)
+	EquipmentPhotoResource, PersonContractResource, PersonAvatarPicResource, PersonPhotoResource,
+	EquipmentHistoryRecordResource, EquipmentResource, FormResource, PersonFormResource,
+	BillingEventTypeResource, PersonBillingLogResource)
 from .api_chore import (ChoreHistoryResource, ChoreOwnershipResource, ChoreResource)
 from .api_cardaccess import (DoorAccessLogResource, KeyCardResource, KeyCodeResource)
 
@@ -35,6 +37,8 @@ api.add_resource(EquipmentHistoryRecordResource, f'{prefix}/equipment_history', 
 api.add_resource(EquipmentResource, f'{prefix}/equipment', f'{prefix}/equipment/<int:equipment_id>')
 api.add_resource(FormResource, f'{prefix}/form', f'{prefix}/form/<int:form_id>')
 api.add_resource(PersonFormResource, f'{prefix}/person_form', f'{prefix}/person_form/<int:person_form_id>')
+api.add_resource(BillingEventTypeResource, f'{prefix}/billing_event_type', f'{prefix}/billing_event_type/<int:event_type_id>')
+api.add_resource(PersonBillingLogResource, f'{prefix}/person_billing_log', f'{prefix}/person_billing_log/<int:billing_log_id>')
 
 # Examples
 # api.add_resource(AllPersonsResource, '/persons/all')
