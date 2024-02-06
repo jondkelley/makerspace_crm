@@ -1,11 +1,115 @@
 from flask_restful import Resource, reqparse
 from models.crm.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, ContractTypeMap, Zone, Location, Equipment,
     Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership, PersonRbac,
-    PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto)
+    PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto, EquipmentHistoryRecord, Equipment)
 from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
 import base64
 from flask import jsonify, request
 from peewee import IntegrityError
+
+
+class EquipmentHistoryRecordResource(Resource):
+    def post(self):
+        try:
+            data = request.get_json()
+            person_id = data.get('person_id')
+            notes = data['notes']
+            class_type = data['class_type']
+
+            new_record = EquipmentHistoryRecord.create(person=person_id, notes=notes, class_type=class_type)
+            return {'message': 'Record created successfully', 'id': new_record.id}, 201
+        except KeyError as e:
+            return {'error': f'Missing key {e}'}, 400
+
+    def get(self, record_id):
+        try:
+            record = EquipmentHistoryRecord.get(EquipmentHistoryRecord.id == record_id)
+            return {
+                'id': record.id,
+                'person_id': record.person.id if record.person else None,
+                'notes': record.notes,
+                'class_type': record.class_type
+            }
+        except EquipmentHistoryRecord.DoesNotExist:
+            return {'error': 'Record not found'}, 404
+
+    def delete(self, record_id):
+        try:
+            record = EquipmentHistoryRecord.get(EquipmentHistoryRecord.id == record_id)
+            record.delete_instance()
+            return {'message': f'Record with ID {record_id} has been deleted'}, 200
+        except EquipmentHistoryRecord.DoesNotExist:
+            return {'error': 'Record not found'}, 404
+
+    def put(self, record_id):
+        try:
+            record = EquipmentHistoryRecord.get(EquipmentHistoryRecord.id == record_id)
+            data = request.get_json()
+            record.notes = data.get('notes', record.notes)
+            record.class_type = data.get('class_type', record.class_type)
+            record.save()
+            return {'message': f'Record with ID {record_id} has been updated'}, 200
+        except EquipmentHistoryRecord.DoesNotExist:
+            return {'error': 'Record not found'}, 404
+
+class EquipmentResource(Resource):
+    def post(self):
+        try:
+            data = request.get_json()
+            new_equipment = Equipment.create(
+                name=data['name'],
+                equipment_type=data['equipment_type'],
+                manufacturer=data.get('manufacturer'),
+                model=data.get('model'),
+                serial_number=data.get('serial_number'),
+                out_of_order=data.get('out_of_order', False),
+                asset_id=data.get('asset_id'),
+                description=data['description'],
+                instruction_manual_url=data.get('instruction_manual_url'),
+                training_course_url=data.get('training_course_url'),
+                required_form=data.get('required_form'),
+                procurement_date=data.get('procurement_date'),
+                donor=data.get('donor'),
+                donor_document=data.get('donor_document'),
+                donor_already_taxed=data.get('donor_already_taxed', False),
+                is_loaned=data.get('is_loaned', False),
+                requires_training=data.get('requires_training', False),
+                value_market=data.get('value_market'),
+                value_tax=data.get('value_tax'),
+                assigned_zone=data['assigned_zone']
+            )
+            return {'message': 'Equipment created successfully', 'id': new_equipment.id}, 201
+        except KeyError as e:
+            return {'error': f'Missing key {e}'}, 400
+
+    def get(self, equipment_id):
+        try:
+            equipment = Equipment.get(Equipment.id == equipment_id)
+            return {
+                # Assuming serialization of fields is done properly here.
+                # Implement serialization logic as needed to convert model instances to JSON-friendly format.
+            }
+        except DoesNotExist:
+            return {'error': 'Equipment not found'}, 404
+
+    def delete(self, equipment_id):
+        try:
+            equipment = Equipment.get(Equipment.id == equipment_id)
+            equipment.delete_instance()
+            return {'message': f'Equipment with ID {equipment_id} has been deleted'}, 200
+        except DoesNotExist:
+            return {'error': 'Equipment not found'}, 404
+
+    def put(self, equipment_id):
+        try:
+            equipment = Equipment.get(Equipment.id == equipment_id)
+            data = request.get_json()
+            # Update the equipment instance with new data
+            # Ensure proper handling of fields and updating only those provided
+            equipment.save()
+            return {'message': f'Equipment with ID {equipment_id} has been updated'}, 200
+        except DoesNotExist:
+            return {'error': 'Equipment not found'}, 404
 
 class PersonRbacResource(Resource):
     def get(self, person_id):
@@ -228,8 +332,8 @@ class MembershipTypeMapResource(Resource):
         except MembershipTypeMap.DoesNotExist:
             return {'error': 'Membership Type not found'}, 404
 
-class PersonAllowedEquipmentResource(Resource):
-    # CRUD operations for PersonAllowedEquipment (many-to-many relationship)
+class PersonTrainedEquipmentResource(Resource):
+    # CRUD operations for PersonTrainedEquipment (many-to-many relationship)
     # Example: Create a new association between equipment and a person
     def post(self):
         parser = reqparse.RequestParser()
@@ -241,7 +345,7 @@ class PersonAllowedEquipmentResource(Resource):
             equipment = Equipment.get(Equipment.id == args['equipment_id'])
             person = Person.get(Person.id == args['person_id'])
 
-            association, created = PersonAllowedEquipment.get_or_create(equipment=equipment, person=person)
+            association, created = PersonTrainedEquipment.get_or_create(equipment=equipment, person=person)
 
             if created:
                 return {'message': 'Association created successfully'}, 201
@@ -358,64 +462,64 @@ class PersonMembershipResource(Resource):
             return {'error': 'Person, Membership Type, or association not found'}, 404
 
 
-class PersonBillingCadenceResource(Resource):
-    def get(self, person_id):
-        try:
-            person = Person.get(Person.id == person_id)
-            billing_cadences = person.personbillingcadence_set.select().join(BillingCadenceTypeMap)
-            billing_cadence_list = [{'id': billing_cadence.membership_type.id, 'name': billing_cadence.membership_type.name, 'description': billing_cadence.membership_type.description} for billing_cadence in billing_cadences]
-            return {'person_id': person.id, 'billing_cadences': billing_cadence_list}
-        except Person.DoesNotExist:
-            return {'error': 'Person not found'}, 404
+# class PersonBillingCadenceResource(Resource):
+#     def get(self, person_id):
+#         try:
+#             person = Person.get(Person.id == person_id)
+#             billing_cadences = person.personbillingcadence_set.select().join(BillingCadenceTypeMap)
+#             billing_cadence_list = [{'id': billing_cadence.membership_type.id, 'name': billing_cadence.membership_type.name, 'description': billing_cadence.membership_type.description} for billing_cadence in billing_cadences]
+#             return {'person_id': person.id, 'billing_cadences': billing_cadence_list}
+#         except Person.DoesNotExist:
+#             return {'error': 'Person not found'}, 404
 
-    def post(self):
-        parser = reqparse.RequestParser()
-        parser.add_argument('person_id', type=int, required=True)
-        parser.add_argument('billing_cadence_type_id', type=int, required=True)
-        args = parser.parse_args()
+#     def post(self):
+#         parser = reqparse.RequestParser()
+#         parser.add_argument('person_id', type=int, required=True)
+#         parser.add_argument('billing_cadence_type_id', type=int, required=True)
+#         args = parser.parse_args()
 
-        try:
-            person = Person.get(Person.id == args['person_id'])
-            billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == args['billing_cadence_type_id'])
+#         try:
+#             person = Person.get(Person.id == args['person_id'])
+#             billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == args['billing_cadence_type_id'])
 
-            association, created = PersonBillingCadence.get_or_create(person=person, membership_type=billing_cadence_type)
+#             association, created = PersonBillingCadence.get_or_create(person=person, membership_type=billing_cadence_type)
 
-            if created:
-                return {'message': 'Person-Billing Cadence association created successfully'}, 201
-            else:
-                return {'message': 'Person-Billing Cadence association already exists'}, 200
-        except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist):
-            return {'error': 'Person or Billing Cadence Type not found'}, 404
+#             if created:
+#                 return {'message': 'Person-Billing Cadence association created successfully'}, 201
+#             else:
+#                 return {'message': 'Person-Billing Cadence association already exists'}, 200
+#         except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist):
+#             return {'error': 'Person or Billing Cadence Type not found'}, 404
 
-    def put(self, person_id, billing_cadence_type_id):
-        parser = reqparse.RequestParser()
-        parser.add_argument('person_id', type=int, required=True)
-        parser.add_argument('billing_cadence_type_id', type=int, required=True)
-        args = parser.parse_args()
+#     def put(self, person_id, billing_cadence_type_id):
+#         parser = reqparse.RequestParser()
+#         parser.add_argument('person_id', type=int, required=True)
+#         parser.add_argument('billing_cadence_type_id', type=int, required=True)
+#         args = parser.parse_args()
 
-        try:
-            person = Person.get(Person.id == args['person_id'])
-            billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == args['billing_cadence_type_id'])
+#         try:
+#             person = Person.get(Person.id == args['person_id'])
+#             billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == args['billing_cadence_type_id'])
 
-            association, created = PersonBillingCadence.get_or_create(person=person, membership_type=billing_cadence_type)
+#             association, created = PersonBillingCadence.get_or_create(person=person, membership_type=billing_cadence_type)
 
-            if created:
-                return {'message': 'Person-Billing Cadence association created successfully'}, 201
-            else:
-                return {'message': 'Person-Billing Cadence association already exists'}, 200
-        except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist):
-            return {'error': 'Person or Billing Cadence Type not found'}, 404
+#             if created:
+#                 return {'message': 'Person-Billing Cadence association created successfully'}, 201
+#             else:
+#                 return {'message': 'Person-Billing Cadence association already exists'}, 200
+#         except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist):
+#             return {'error': 'Person or Billing Cadence Type not found'}, 404
 
-    def delete(self, person_id, billing_cadence_type_id):
-        try:
-            person = Person.get(Person.id == person_id)
-            billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == billing_cadence_type_id)
+#     def delete(self, person_id, billing_cadence_type_id):
+#         try:
+#             person = Person.get(Person.id == person_id)
+#             billing_cadence_type = BillingCadenceTypeMap.get(BillingCadenceTypeMap.id == billing_cadence_type_id)
 
-            association = PersonBillingCadence.get(person=person, membership_type=billing_cadence_type)
-            association.delete_instance()
-            return {'message': 'Person-Billing Cadence association deleted successfully'}
-        except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist, PersonBillingCadence.DoesNotExist):
-            return {'error': 'Person, Billing Cadence Type, or association not found'}, 404
+#             association = PersonBillingCadence.get(person=person, membership_type=billing_cadence_type)
+#             association.delete_instance()
+#             return {'message': 'Person-Billing Cadence association deleted successfully'}
+#         except (Person.DoesNotExist, BillingCadenceTypeMap.DoesNotExist, PersonBillingCadence.DoesNotExist):
+#             return {'error': 'Person, Billing Cadence Type, or association not found'}, 404
 
 
 class PersonContractResource(Resource):

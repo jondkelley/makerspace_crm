@@ -11,9 +11,11 @@ class BillingEventType(BaseModel):
     description = TextField()
 
 class Location(BaseModel):
+    # API
     name = CharField(max_length=128)
 
 class Zone(BaseModel):
+    # API
     name = CharField(max_length=128)
     location = ForeignKeyField(Location, backref='zones')
 
@@ -24,14 +26,17 @@ class BillingCadenceTypeMap(BaseModel):
     description = TextField()
 
 class MembershipTypeMap(BaseModel):
+    # API
     name = CharField(max_length=128) # board/staff, volunteer, partial, full, full_extended, 24/7
     description = TextField()
 
 class ContractTypeMap(BaseModel):
+    # API
     name = CharField(max_length=128) # liability waver, table saw waiver, etc.
     description = TextField()
 
 class Person(BaseModel):
+    # API
     first = CharField(max_length=64)
     last = CharField(max_length=64)
     email = CharField(max_length=512)
@@ -98,12 +103,14 @@ class PersonPreferences(BaseModel):
 class PersonAvatarPic(FileModel):
     """
     user avatar
+    # API
     """
     person = ForeignKeyField(Person, backref='profile_pic')
 
 class PersonPhoto(FileModel):
     """
     membership picture
+    # API
     """
     person = ForeignKeyField(Person, backref='photo')
 
@@ -191,12 +198,14 @@ class Equipment(BaseModel):
 class EquipmentPhoto(FileModel):
     """
     equipment picture
+    # API
     """
     equipment = ForeignKeyField(Equipment, backref='photo')
 
 class PersonTrainedEquipment(BaseModel):
     """
     many to many relation for who is trained on equipment
+    # API
     """
     equipment = ForeignKeyField(Equipment)
     person = ForeignKeyField(Person)
@@ -208,6 +217,7 @@ class PersonTrainedEquipment(BaseModel):
 class PersonContract(FileModel):
     """
     many to many relation on who has signed a contract, with copy of contract file
+    # API
     """
     contract_type = ForeignKeyField(ContractTypeMap)
     person = ForeignKeyField(Person)
@@ -216,6 +226,7 @@ class PersonContract(FileModel):
 class PersonMembership(BaseModel):
     """
     many to many relation on type of club membership
+    # API
     """
     membership_type = ForeignKeyField(MembershipTypeMap)
     person = ForeignKeyField(Person)
@@ -223,6 +234,7 @@ class PersonMembership(BaseModel):
 class PersonRbac(BaseModel):
     """
     many to many rbac relationships
+    # API
     """
     role = TextField()
     permission = BooleanField(default=False)
