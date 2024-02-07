@@ -3,77 +3,154 @@ from models.crm.makerspace import (BillingCadenceTypeMap, MembershipTypeMap, Con
     Person, PersonEmergencyContact, PersonContact, PersonTrainedEquipment, PersonContract, PersonMembership, PersonRbac,
     PersonPhoto, PersonAvatarPic, PersonContract, EquipmentPhoto, EquipmentHistoryRecord, Equipment, Form, PersonForm,
     BillingEventType, PersonBillingLog, PersonBilling)
+from helpers.apihelper import BaseResource
+from helpers.dbhelper import find_invalid_columns_in_table, remove_keys_starting_with_underscore
 from models.crm.cardaccess import (DoorProfiles, PersonDoorCredentialProfile, DoorAccessLog, KeyCard, KeyCode)
 import base64
 from flask import jsonify, request
 from peewee import IntegrityError
 
+class PersonResource(BaseResource):
+    """
+    A Flask-RESTful resource for managing Person entities.
+
+    Supports standard CRUD operations on Person entities, with additional support for
+    soft deletion, hiding, and unhiding entities.
+
+    Attributes:
+        model (Peewee Model): The model associated with this resource.
+
+    Methods:
+        get(object_id): Retrieves a Person entity by its ID, excluding entities that are soft-deleted or hidden.
+        post(): Creates a new Person entity based on the provided JSON data.
+        delete(object_id): Marks a Person entity as soft-deleted by its ID.
+        put(object_id): Updates an existing Person entity by its ID with the provided JSON data, respecting hidden status.
+        patch(object_id): Performs partial updates or actions on a Person entity, such as restoring, hard deleting, hiding, or unhiding.
+    """
+    model = Person
+
+# Flask-RESTful resource class
 class PersonBillingResource(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.initialize_reqparse()
+
+    def initialize_reqparse(self):
+        # Add arguments for each field
+        self.reqparse.add_argument('billing_entity_id', type=int, required=True, help='No billing_entity_id provided', location='json')
+        # Add other fields as necessary...
+
     def post(self):
-        data = request.get_json()
+        args = self.reqparse.parse_args()
+        # Assuming all model fields except id are covered in args for simplicity
+        invalid_columns = find_invalid_columns_in_table(PersonBilling, args)
+        if invalid_columns:
+            return {'error': f'Invalid columns: {invalid_columns}'}, 400
+
         try:
-            new_person_billing = PersonBilling.create(
-                billing_entity_id=data.get('billing_entity_id'),
-                last_invoice=data.get('last_invoice', datetime.datetime.now()),
-                next_invoice=data.get('next_invoice', datetime.datetime.now()),
-                last_paid=data.get('last_paid', datetime.datetime.now()),
-                billing_cadence=data['billing_cadence'],
-                billing_ref=data.get('billing_ref'),
-                is_paid=data.get('is_paid', False),
-                is_overdue=data.get('is_overdue', False),
-                is_deliquent=data.get('is_deliquent', False),
-                person=data['person']
-            )
+            new_person_billing = PersonBilling.create(**args)
             return {'message': 'Person billing created successfully', 'id': new_person_billing.id}, 201
-        except KeyError as e:
-            return {'error': f'Missing key {e}'}, 400
         except IntegrityError as e:
             return {'error': str(e)}, 400
 
     def get(self, person_billing_id):
         try:
-            person_billing = PersonBilling.get(PersonBilling.id == person_billing_id)
-            return {
-                'id': person_billing.id,
-                'billing_entity_id': person_billing.billing_entity_id,
-                'last_invoice': person_billing.last_invoice,
-                'next_invoice': person_billing.next_invoice,
-                'last_paid': person_billing.last_paid,
-                'billing_cadence': person_billing.billing_cadence_id,  # Assuming billing_cadence_id is accessible
-                'billing_ref': person_billing.billing_ref,
-                'is_paid': person_billing.is_paid,
-                'is_overdue': person_billing.is_overdue,
-                'is_deliquent': person_billing.is_deliquent,
-                'person_id': person_billing.person_id
-            }
-        except DoesNotExist:
-            return {'error': 'Person billing not found'}, 404
-
-    def delete(self, person_billing_id):
-        try:
-            person_billing = PersonBilling.get(PersonBilling.id == person_billing_id)
-            person_billing.delete_instance()
-            return {'message': f'Person billing with ID {person_billing_id} has been deleted'}, 200
+            person_billing = PersonBilling.get_by_id(person_billing_id)
+            return person_billing.to_dict(), 200  # Assuming to_dict() method exists
         except DoesNotExist:
             return {'error': 'Person billing not found'}, 404
 
     def put(self, person_billing_id):
-        data = request.get_json()
+        args = self.reqparse.parse_args()
+        invalid_columns = find_invalid_columns_in_table(PersonBilling, args)
+        if invalid_columns:
+            return {'error': f'Invalid columns: {invalid_columns}'}, 400
+
         try:
-            person_billing = PersonBilling.get(PersonBilling.id == person_billing_id)
-            person_billing.billing_entity_id = data.get('billing_entity_id', person_billing.billing_entity_id)
-            person_billing.last_invoice = data.get('last_invoice', person_billing.last_invoice)
-            person_billing.next_invoice = data.get('next_invoice', person_billing.next_invoice)
-            person_billing.last_paid = data.get('last_paid', person_billing.last_paid)
-            person_billing.billing_cadence = data.get('billing_cadence', person_billing.billing_cadence)
-            person_billing.billing_ref = data.get('billing_ref', person_billing.billing_ref)
-            person_billing.is_paid = data.get('is_paid', person_billing.is_paid)
-            person_billing.is_overdue = data.get('is_overdue', person_billing.is_overdue)
-            person_billing.is_deliquent = data.get('is_deliquent', person_billing.is_deliquent)
-            person_billing.save()
-            return {'message': f'Person billing with ID {person_billing_id} has been updated'}, 200
+            updated_count = PersonBilling.update(**args).where(PersonBilling.id == person_billing_id).execute()
+            if updated_count:
+                return {'message': f'Person billing with ID {person_billing_id} has been updated'}, 200
+            else:
+                return {'error': 'Person billing not found'}, 404
+        except IntegrityError as e:
+            return {'error': str(e)}, 400
+
+    def delete(self, person_billing_id):
+        try:
+            deleted_count = PersonBilling.delete().where(PersonBilling.id == person_billing_id).execute()
+            if deleted_count:
+                return {'message': f'Person billing with ID {person_billing_id} has been deleted'}, 200
+            else:
+                return {'error': 'Person billing not found'}, 404
         except DoesNotExist:
             return {'error': 'Person billing not found'}, 404
+
+# class PersonBillingResource(Resource):
+#     def post(self):
+#         data = request.get_json()
+#         try:
+#             new_person_billing = PersonBilling.create(
+#                 billing_entity_id=data.get('billing_entity_id'),
+#                 last_invoice=data.get('last_invoice', datetime.datetime.now()),
+#                 next_invoice=data.get('next_invoice', datetime.datetime.now()),
+#                 last_paid=data.get('last_paid', datetime.datetime.now()),
+#                 billing_cadence=data['billing_cadence'],
+#                 billing_ref=data.get('billing_ref'),
+#                 is_paid=data.get('is_paid', False),
+#                 is_overdue=data.get('is_overdue', False),
+#                 is_deliquent=data.get('is_deliquent', False),
+#                 person=data['person']
+#             )
+#             return {'message': 'Person billing created successfully', 'id': new_person_billing.id}, 201
+#         except KeyError as e:
+#             return {'error': f'Missing key {e}'}, 400
+#         except IntegrityError as e:
+#             return {'error': str(e)}, 400
+
+#     def get(self, person_billing_id):
+#         try:
+#             person_billing = PersonBilling.get(PersonBilling.id == person_billing_id)
+#             return {
+#                 'id': person_billing.id,
+#                 'billing_entity_id': person_billing.billing_entity_id,
+#                 'last_invoice': person_billing.last_invoice,
+#                 'next_invoice': person_billing.next_invoice,
+#                 'last_paid': person_billing.last_paid,
+#                 'billing_cadence': person_billing.billing_cadence_id,  # Assuming billing_cadence_id is accessible
+#                 'billing_ref': person_billing.billing_ref,
+#                 'is_paid': person_billing.is_paid,
+#                 'is_overdue': person_billing.is_overdue,
+#                 'is_deliquent': person_billing.is_deliquent,
+#                 'person_id': person_billing.person_id
+#             }
+#         except DoesNotExist:
+#             return {'error': 'Person billing not found'}, 404
+
+#     def delete(self, person_billing_id):
+#         try:
+#             person_billing = PersonBilling.get(PersonBilling.id == person_billing_id)
+#             person_billing.delete_instance()
+#             return {'message': f'Person billing with ID {person_billing_id} has been deleted'}, 200
+#         except DoesNotExist:
+#             return {'error': 'Person billing not found'}, 404
+
+#     def put(self, person_billing_id):
+#         data = request.get_json()
+#         try:
+#             person_billing = PersonBilling.get(PersonBilling.id == person_billing_id)
+#             person_billing.billing_entity_id = data.get('billing_entity_id', person_billing.billing_entity_id)
+#             person_billing.last_invoice = data.get('last_invoice', person_billing.last_invoice)
+#             person_billing.next_invoice = data.get('next_invoice', person_billing.next_invoice)
+#             person_billing.last_paid = data.get('last_paid', person_billing.last_paid)
+#             person_billing.billing_cadence = data.get('billing_cadence', person_billing.billing_cadence)
+#             person_billing.billing_ref = data.get('billing_ref', person_billing.billing_ref)
+#             person_billing.is_paid = data.get('is_paid', person_billing.is_paid)
+#             person_billing.is_overdue = data.get('is_overdue', person_billing.is_overdue)
+#             person_billing.is_deliquent = data.get('is_deliquent', person_billing.is_deliquent)
+#             person_billing.save()
+#             return {'message': f'Person billing with ID {person_billing_id} has been updated'}, 200
+#         except DoesNotExist:
+#             return {'error': 'Person billing not found'}, 404
 
 class BillingEventTypeResource(Resource):
     def post(self):
@@ -411,89 +488,90 @@ class PersonRbacResource(Resource):
         except PersonRbac.DoesNotExist:
             return {'error': 'PersonRbac not found'}, 404
 
-class PersonResource(Resource):
-    def get(self, person_id):
-        try:
-            person = Person.get(Person.id == person_id)
-            if person.is_deleted:
-                return {'error': 'Person has been soft deleted'}, 404
-            return {
-                'id': person.id,
-                'first': person.first,
-                'last': person.last,
-                'email': person.email,
-            }
-        except Person.DoesNotExist:
-            return {'error': 'Person not found'}, 404
+# class PersonResource(Resource):
+#     def get(self, person_id):
+#         try:
+#             person = Person.get(Person.id == person_id)
+#             if person.is_deleted:
+#                 return {'error': 'Person has been soft deleted'}, 404
+#             return {
+#                 'id': person.id,
+#                 'first': person.first,
+#                 'last': person.last,
+#                 'email': person.email,
+#             }
+#         except Person.DoesNotExist:
+#             return {'error': 'Person not found'}, 404
 
-    def delete(self, person_id):
-        try:
-            person = Person.get(Person.id == person_id)
-            person.is_deleted = True
-            person.save()
-            return {'message': f'Person with ID {person_id} has been soft deleted'}
-        except Person.DoesNotExist:
-            return {'error': 'Person not found'}, 404
+#     def delete(self, person_id):
+#         try:
+#             person = Person.get(Person.id == person_id)
+#             person.is_deleted = True
+#             person.save()
+#             return {'message': f'Person with ID {person_id} has been soft deleted'}
+#         except Person.DoesNotExist:
+#             return {'error': 'Person not found'}, 404
 
-    def put(self, person_id):
-        parser = reqparse.RequestParser()
-        parser.add_argument('first', type=str, required=True)
-        parser.add_argument('last', type=str, required=True)
-        args = parser.parse_args()
+#     def put(self, person_id):
+#         parser = reqparse.RequestParser()
+#         parser.add_argument('first', type=str, required=True)
+#         parser.add_argument('last', type=str, required=True)
+#         args = parser.parse_args()
 
-        try:
-            person = Person.get(Person.id == person_id)
-            if person.is_deleted:
-                return {'error': 'Person has been soft deleted'}, 404
-            person.first = args['first']
-            person.last = args['last']
-            person.email = args['email']
-            person.save()
-            return {'message': f'Person with ID {person_id} has been updated'}
-        except Person.DoesNotExist:
-            return {'error': 'Person not found'}, 404
+#         try:
+#             person = Person.get(Person.id == person_id)
+#             if person.is_deleted:
+#                 return {'error': 'Person has been soft deleted'}, 404
+#             person.first = args['first']
+#             person.last = args['last']
+#             person.email = args['email']
+#             person.save()
+#             return {'message': f'Person with ID {person_id} has been updated'}
+#         except Person.DoesNotExist:
+#             return {'error': 'Person not found'}, 404
 
-    def patch(self, person_id):
-        # curl -X PATCH -H "Content-Type: application/json" -d '{"undelete": true}' http://localhost:5000/person/<person_id>
-        # curl -X PATCH -H "Content-Type: application/json" -d '{"restore_softdelete": true}' http://localhost:5000/person/<person_id>
-        parser = reqparse.RequestParser()
-        parser.add_argument('restore_softdelete', type=bool, default=False)
-        parser.add_argument('hard_delete', type=bool, default=False)
-        args = parser.parse_args()
-        try:
-            person = Person.get(Person.id == person_id)
-            undelete_flag = args.get('undelete')  # Check if "undelete" is in the JSON data
-            hard_delete_flag = args.get('hard_delete')  # Check if "hard_delete" is in the JSON data
+#     def patch(self, person_id):
+#         # curl -X PATCH -H "Content-Type: application/json" -d '{"undelete": true}' http://localhost:5000/person/<person_id>
+#         # curl -X PATCH -H "Content-Type: application/json" -d '{"restore_softdelete": true}' http://localhost:5000/person/<person_id>
+#         parser = reqparse.RequestParser()
+#         parser.add_argument('restore_softdelete', type=bool, default=False)
+#         parser.add_argument('hard_delete', type=bool, default=False)
+#         args = parser.parse_args()
+#         try:
+#             person = Person.get(Person.id == person_id)
+#             undelete_flag = args.get('undelete')  # Check if "undelete" is in the JSON data
+#             hard_delete_flag = args.get('hard_delete')  # Check if "hard_delete" is in the JSON data
 
-            if hard_delete_flag:
-                # Perform hard deletion (remove from the database)
-                person.delete_instance()
-                return {'message': f'Person with ID {person_id} has been hard deleted'}
-            elif undelete_flag and person.is_deleted:
-                person.is_deleted = False
-                person.save()
-                return {'message': f'Person with ID {person_id} has been undeleted'}
-            elif not undelete_flag:
-                return {'message': 'No action specified in the request body'}, 200
-            else:
-                return {'message': 'Person is not soft-deleted or undelete action not allowed'}, 400
-        except Person.DoesNotExist:
-            return {'error': 'Person not found'}, 404
+#             if hard_delete_flag:
+#                 # Perform hard deletion (remove from the database)
+#                 person.delete_instance()
+#                 return {'message': f'Person with ID {person_id} has been hard deleted'}
+#             elif undelete_flag and person.is_deleted:
+#                 person.is_deleted = False
+#                 person.save()
+#                 return {'message': f'Person with ID {person_id} has been undeleted'}
+#             elif not undelete_flag:
+#                 return {'message': 'No action specified in the request body'}, 200
+#             else:
+#                 return {'message': 'Person is not soft-deleted or undelete action not allowed'}, 400
+#         except Person.DoesNotExist:
+#             return {'error': 'Person not found'}, 404
 
-    def post(self):
-        parser = reqparse.RequestParser()
-        parser.add_argument('first', type=str, required=True)
-        parser.add_argument('last', type=str, required=True)
-        parser.add_argument('email', type=str, required=True)
-        args = parser.parse_args()
+#     def post(self):
+#         parser = reqparse.RequestParser()
+#         parser.add_argument('first', type=str, required=True)
+#         parser.add_argument('last', type=str, required=True)
+#         parser.add_argument('email', type=str, required=True)
+#         args = parser.parse_args()
 
-        new_person = Person.create(
-            first=args['first'],
-            last=args['last'],
-            email=args['email']
-        )
+#         new_person = Person.create(
+#             first=args['first'],
+#             last=args['last'],
+#             email=args['email']
+#         )
 
-        return {'message': 'Person created successfully', 'person_id': new_person.id}, 201
+#         return {'message': 'Person created successfully', 'person_id': new_person.id}, 201
+
 
 class EquipmentPhotoResource(Resource):
     """
